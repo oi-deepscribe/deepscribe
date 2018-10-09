@@ -5,5 +5,5 @@ python src/pipeline.py --datacsv data/ochre/imageIndex.csv \
                       --imgfolder data/ochre/images_PFA \
                       --examples_req 30 \
                       --split 0.9 \
-                      --resize 200 200 \
+                      --resize 100 100 \
                       --outfolder data/processed/over_30

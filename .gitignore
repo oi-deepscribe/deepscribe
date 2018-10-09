@@ -5,6 +5,8 @@ __pycache__/
 
 #not committing ochre data
 data/ochre
+#misc
+.DS_Store
 
 # C extensions
 *.so
