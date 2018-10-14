@@ -58,9 +58,7 @@ def run(args):
         except OSError as e:
             if e.errno != errno.EEXIST:
                 raise
-
-
-
+                
         #save train data to CSV
         #
         with open("{}/train.csv".format(args.outfolder), 'w') as f:
@@ -79,11 +77,6 @@ def run(args):
                 testwriter.writerow([name, label])
                 #save image
                 img.save("{}/{}".format(out_test, name))
-
-
-
-
-
 
 
 if __name__=="__main__":

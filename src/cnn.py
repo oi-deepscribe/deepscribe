@@ -9,15 +9,13 @@ from argparse import ArgumentParser
 from sys import argv
 import numpy as np
 
-
-
 def parse(args):
     parser = ArgumentParser()
     parser.add_argument("--train_labels", help="location of CSV file with training labels")
     parser.add_argument("--train_images", help="location of training images ")
     parser.add_argument("--test_labels", help="location of CSV file with test labels")
     parser.add_argument("--test_images", help="location of test images ")
-    parser.add_argument("-flatten", help="flatten images to grayscale.", action="store_true")
+    parser.add_argument("--flatten", help="flatten images to grayscale.", action="store_true")
     parser.add_argument("--output", help="folder with log files and output plots")
     return parser.parse_args(args)
 
