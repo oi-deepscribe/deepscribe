@@ -21,10 +21,32 @@ def parse(args):
     parser.add_argument("--min_size", nargs=2, type=int, required=False, help="minimum size to be kept in each image.")
     parser.add_argument("--examples_req", type=int, help="number of training examples per class required. Classes with too few examples will be skipped.", required=False)
     parser.add_argument("--blur_thresh", type=float, help="Laplacian variance threshold.", required=False)
-    parser.add_argument("--edge_detect", action="store_true", help="perform edge detection. ")
+    parser.add_argument("--otsu", action="store_true", help="Perform Otsu thresholding. ")
     parser.add_argument("--resize", nargs=2, help="output image size, in px.", type=int, required=False)
     parser.add_argument("--outfile", help="location of output HDF5 file. ")
     return parser.parse_args(args)
+
+def otsu(img):
+    """Performs Gaussian blur and Otsu thresholding..
+
+    Parameters
+    ----------
+    img : np.ndarray
+        Input image.
+
+    Returns
+    -------
+    np.ndarray
+        Output image.
+
+    """
+
+    blurred = cv2.GaussianBlur(img,(5,5),0)
+    # using inverse binary - dark regions will become lighter
+    ret, img_thresh = cv2.threshold(blurred,0,255,cv2.THRESH_BINARY_INV+cv2.THRESH_OTSU)
+
+    return img_thresh
+
 
 def run(args):
     # opening all CSV files
@@ -72,14 +94,13 @@ def run(args):
 
     print("{} data points remaining".format(len(img_data)))
 
-    # if args.edge_detect:
-    #     img_data = [(img, label) for img, label in img_data]
-
-
     # resize images
     if args.resize:
         img_data = [(cv2.resize(img, tuple(args.resize)), label) for img, label in img_data]
 
+    # perform Otsu thresholding
+    if args.otsu:
+        img_data = [(otsu(img), label) for img, label in img_data]
 
     # stack all images
     imgs, labels = zip(*img_data)

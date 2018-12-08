@@ -3,7 +3,7 @@
 csvfolder=data/ochre/PFA_Hotspot_Cutouts
 
 #min examples required
-NEXAMPLES=100
+NEXAMPLES=300
 
 # collect CSV folders
 csvfolders=""
@@ -16,8 +16,8 @@ python -m deepscribe.scripts.pipeline --datafiles $csvfolders \
                       --remove_prefix PFS \
                       --imgfolder data/ochre/PFA_Hotspot_Cutouts/Hotspot_images \
                       --examples_req $NEXAMPLES \
-                      --min_size 30 30 \
-                      --blur_thresh 100 \
-                      --edge_detect \
-                      --resize 100 100 \
+                      --min_size 25 25 \
+                      --blur_thresh 75 \
+                      --otsu \
+                      --resize 50 50 \
                       --outfile data/processed/PFA_Large/over_$NEXAMPLES.npz
