@@ -1,0 +1,14 @@
+name: deepscribe
+channels:
+  - conda-forge
+dependencies:
+  - numpy
+  - matplotlib
+  - pillow
+  - keras
+  - tensorflow
+  - tqdm
+  - opencv
+  - h5py
+  - pip:
+    - xlsx2csv

@@ -1,9 +1,23 @@
 #!/bin/bash
 
-python src/pipeline.py --datacsv data/ochre/imageIndex.csv \
+csvfolder=data/ochre/PFA_Hotspot_Cutouts
+
+#min examples required
+NEXAMPLES=100
+
+# collect CSV folders
+csvfolders=""
+for i in `seq 1 11`
+do
+  csvfolders+="$csvfolder/000image_$i.csv "
+done
+
+python -m deepscribe.scripts.pipeline --datafiles $csvfolders \
                       --remove_prefix PFS \
-                      --imgfolder data/ochre/images_PFA \
-                      --examples_req 30 \
-                      --split 0.9 \
+                      --imgfolder data/ochre/PFA_Hotspot_Cutouts/Hotspot_images \
+                      --examples_req $NEXAMPLES \
+                      --min_size 30 30 \
+                      --blur_thresh 100 \
+                      --edge_detect \
                       --resize 100 100 \
-                      --outfolder data/processed/over_30
+                      --outfile data/processed/PFA_Large/over_$NEXAMPLES.npz

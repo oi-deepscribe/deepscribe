@@ -1,8 +1,8 @@
 #!/bin/bash
 
-data=data/processed/over_30
-
-python src/cnn.py --train_images $data/train --train_labels $data/train.csv \
-                  --test_images $data/test --test_labels $data/test.csv \
-                  --flatten \
-                  --output output
+python -m deepscribe.scripts.train_cnn --npz data/processed/PFA_Large/over_100.npz \
+                                      --tensorboard logs/cnn \
+                                      --split 0.9 \
+                                      --bsize 2048 \
+                                      --epochs 10 \
+                                      --output output/cnn

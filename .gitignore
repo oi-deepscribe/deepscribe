@@ -7,6 +7,10 @@ __pycache__/
 data/ochre
 #misc
 .DS_Store
+*.npz
+
+#not committing tensorboard stuff
+logs/*
 
 # C extensions
 *.so
