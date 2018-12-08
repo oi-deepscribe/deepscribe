@@ -3,13 +3,45 @@
 import tensorflow as tf
 import tensorflow.keras as kr
 
+def mlp_classifier(input_shape, hidden_layers, layer_size, num_classes):
+    """Multi-layer perceptron model. Flattens images first.
+
+    Parameters
+    ----------
+    input_shape : tuple of integers
+        Input shape of model
+    hidden_layers : int
+        Number of hidden layers.
+    layer_size : int
+        Hidden layer size.
+    num_classes : int
+        number of output classes.
+
+    Returns
+    -------
+    kr.models.Sequential
+        Initialized model.
+
+    """
+
+    model = kr.models.Sequential()
+    # flatten the input image
+    model.add(kr.layers.Flatten(input_shape=input_shape))
+
+    for _ in range(hidden_layers):
+        model.add(kr.layers.Dense(layer_size, activation='relu'))
+
+    # final layer
+    model.add(kr.layers.Dense(num_classes, activation='softmax'))
+
+    return model
 
 def cnn_classifier(input_shape, num_classes):
     """Compiles two-layer CNN classifier with the provided input shape and number of classes.
 
     Parameters
     ----------
-    input_shape : tuple of inteers
+    input_shape : tuple of integers
         Input shape of model.
     num_classes : int
         Number of output classes.

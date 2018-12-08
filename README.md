@@ -12,7 +12,7 @@ The script `run_pipeline.sh` performs data preprocessing when provided with a fo
 # Usage
 
 ## Model Architectures
- - Fully Connected MLP 
+ - Fully Connected MLP
  - Convolutional Neural Network
 
 
@@ -21,3 +21,4 @@ The script `run_pipeline.sh` performs data preprocessing when provided with a fo
 #TODOs
 
 - Finish this README, for one.
+- Information bottlenecking in MLP/CNN 
