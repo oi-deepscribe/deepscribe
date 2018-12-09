@@ -18,6 +18,5 @@ python -m deepscribe.scripts.pipeline --datafiles $csvfolders \
                       --examples_req $NEXAMPLES \
                       --min_size 25 25 \
                       --blur_thresh 75 \
-                      --otsu \
                       --resize 50 50 \
                       --outfile data/processed/PFA_Large/over_$NEXAMPLES.npz
