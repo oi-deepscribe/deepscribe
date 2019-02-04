@@ -56,14 +56,21 @@ def cnn_classifier(input_shape, num_classes):
 
 
     model = kr.models.Sequential()
-    model.add(kr.layers.Conv2D(32, kernel_size=(5, 5), strides=(1, 1),
+    model.add(kr.layers.Conv2D(32, kernel_size=(25, 25), strides=(1, 1),
                      activation='relu',
                      input_shape=input_shape))
-    model.add(kr.layers.MaxPooling2D(pool_size=(2, 2), strides=(2, 2)))
-    model.add(kr.layers.Conv2D(64, (5, 5), activation='relu'))
+    model.add(kr.layers.MaxPooling2D(pool_size=(5, 5), strides=(2, 2)))
+    model.add(kr.layers.BatchNormalization())
+    model.add(kr.layers.Dropout(0.5))
+    model.add(kr.layers.Conv2D(64, (15, 15), activation='relu'))
+    model.add(kr.layers.BatchNormalization())
+    # model.add(kr.layers.Dropout(0.5))
+    # model.add(kr.layers.Conv2D(128, (10, 10), activation='relu'))
     model.add(kr.layers.MaxPooling2D(pool_size=(2, 2)))
+    model.add(kr.layers.Dropout(0.5))
     model.add(kr.layers.Flatten())
     model.add(kr.layers.Dense(512, activation='relu'))
+    # model.add(kr.layers.Dense(512, activation='relu'))
     model.add(kr.layers.Dense(num_classes, activation='softmax'))
 
     return model

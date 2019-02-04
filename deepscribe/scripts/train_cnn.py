@@ -5,6 +5,10 @@ from argparse import ArgumentParser
 from sys import argv
 import numpy as np
 from deepscribe.models.baselines import cnn_classifier
+import socket
+from datetime import datetime
+import os
+from sklearn.utils import shuffle
 
 def parse(args):
     parser = ArgumentParser()
@@ -27,6 +31,8 @@ def run(args):
     # convert labels to categorical (one-hot) labels
     labels = kr.utils.to_categorical(loaded['labels'])
 
+    imgs, labels = shuffle(imgs, labels)
+
     input_shape = imgs[0].shape
 
     model = cnn_classifier(input_shape, labels.shape[1])
@@ -37,14 +43,19 @@ def run(args):
               loss='categorical_crossentropy',
               metrics=['accuracy'])
 
-    # tensorboard callbacks
-    tensorboard = kr.callbacks.TensorBoard(args.tensorboard, histogram_freq=1, write_graph=1, write_grads=1)
+    # create tensorboard directory
+    current_time = datetime.now().strftime('%b%d_%H-%M-%S')
+    log_dir = os.path.join(
+        args.tensorboard, current_time + '_' + socket.gethostname())
 
+    # tensorboard callbacks
+    tensorboard = kr.callbacks.TensorBoard(log_dir, histogram_freq=1, write_graph=1, write_grads=1)
+    #
     model.fit(imgs,
             labels,
             batch_size=args.bsize,
             epochs=args.epochs,
-            verbose=1,
+            verbose=2,
             callbacks = [tensorboard],
             validation_split=(1 - args.split))
 
