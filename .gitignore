@@ -8,7 +8,9 @@ data/ochre
 #misc
 output/*
 .DS_Store
-*.npz
+# *.npz
+
+*.jpg
 
 #not committing tensorboard stuff
 logs/*
