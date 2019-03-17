@@ -1,8 +1,6 @@
 #!/bin/bash
 
-python -m deepscribe.scripts.train_cnn --npz data/processed/toy/1_2.npz \
+
+pythonw -m deepscribe.scripts.training.train_cnn --npz data/processed/toy/1_2_3/1_2_3.npz \
                                       --tensorboard logs/cnn \
-                                      --split 0.9 \
-                                      --bsize 64 \
-                                      --epochs 300 \
                                       --output output/cnn

@@ -36,40 +36,47 @@ def mlp_classifier(input_shape, hidden_layers, layer_size, num_classes):
 
     return model
 
-def cnn_classifier(input_shape, num_classes):
-    """Compiles two-layer CNN classifier with the provided input shape and number of classes.
+def build_cnn_classifier(input_shape, num_classes, params):
+    """Builds CNN classifier according to parameter dictionary.
 
     Parameters
     ----------
-    input_shape : tuple of integers
-        Input shape of model.
+    input_shape : tuple
+        Input image shape
     num_classes : int
-        Number of output classes.
+        Number of output classes
+    params : type
+        Description of parameter `params`.
 
     Returns
     -------
-    kr.models.Sequential
-        Initialized model.
+    type
+        Description of returned object.
 
     """
 
 
-
     model = kr.models.Sequential()
-    model.add(kr.layers.Conv2D(32, kernel_size=(25, 25), strides=(1, 1),
-                     activation='relu',
+    model.add(kr.layers.Conv2D(params['conv1_kernels'],
+                        kernel_size=(params['conv1_ksize'], params['conv1_ksize']),
+                        strides=(params['conv1_stride'], params['conv1_stride']),
+                     activation=params['activation'],
                      input_shape=input_shape))
-    model.add(kr.layers.MaxPooling2D(pool_size=(5, 5), strides=(2, 2)))
+    model.add(kr.layers.MaxPooling2D(pool_size=(params['pool1_size'], params['pool1_size']),
+                                    strides=(params['pool1_stride'], params['pool1_stride'])))
     model.add(kr.layers.BatchNormalization())
-    model.add(kr.layers.Dropout(0.5))
-    model.add(kr.layers.Conv2D(64, (15, 15), activation='relu'))
+    model.add(kr.layers.Dropout(params['dropout']))
+    model.add(kr.layers.Conv2D(params['conv2_kernels'],
+            kernel_size=(params['conv2_ksize'], params['conv2_ksize']),
+            strides=(params['conv2_stride'], params['conv2_stride']),
+            activation=params['activation']))
     model.add(kr.layers.BatchNormalization())
-    # model.add(kr.layers.Dropout(0.5))
-    # model.add(kr.layers.Conv2D(128, (10, 10), activation='relu'))
-    model.add(kr.layers.MaxPooling2D(pool_size=(2, 2)))
-    model.add(kr.layers.Dropout(0.5))
+    model.add(kr.layers.MaxPooling2D(pool_size=(params['pool2_size'], params['pool2_size']),
+                                        strides=(params['pool2_stride'], params['pool2_stride'])))
+
+    model.add(kr.layers.Dropout(params['dropout']))
     model.add(kr.layers.Flatten())
-    model.add(kr.layers.Dense(512, activation='relu'))
+    model.add(kr.layers.Dense(params['dense_size'], activation=params['activation']))
     # model.add(kr.layers.Dense(512, activation='relu'))
     model.add(kr.layers.Dense(num_classes, activation='softmax'))
 
