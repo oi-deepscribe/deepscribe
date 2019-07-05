@@ -8,7 +8,7 @@ dependencies:
   - keras
   - tensorflow
   - tqdm
+  - scikit-learn
   - opencv
   - h5py
-  - pip:
-    - xlsx2csv
+  - luigi

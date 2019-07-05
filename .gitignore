@@ -12,6 +12,8 @@ output/*
 
 *.jpg
 
+*.h5
+
 #not committing tensorboard stuff
 logs/*
 
