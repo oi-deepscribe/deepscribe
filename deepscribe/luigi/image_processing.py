@@ -63,7 +63,7 @@ class ImagesToGrayscaleTask(ProcessImageTask):
 
 
 #TODO: do this with only padding or only resizing/scaling?
-class StandardizeImageSize(ProcessImageTask):
+class StandardizeImageSizeTask(ProcessImageTask):
     # location of image folder
     imgfolder = luigi.Parameter()
     hdffolder = luigi.Parameter()
@@ -108,7 +108,7 @@ class StandardizeImageSize(ProcessImageTask):
 
         return new_im
 
-class RescaleImageValues(ProcessImageTask):
+class RescaleImageValuesTask(ProcessImageTask):
     # location of image folder
     imgfolder = luigi.Parameter()
     hdffolder = luigi.Parameter()
@@ -116,7 +116,7 @@ class RescaleImageValues(ProcessImageTask):
     identifier = "rescaled"
 
     def requires(self):
-        return StandardizeImageSize(self.imgfolder, self.hdffolder, self.target_size)
+        return StandardizeImageSizeTask(self.imgfolder, self.hdffolder, self.target_size)
 
-    def process_images(self, img)
-        return StandardScaler.fit_transform(img)
+    def process_image(self, img):
+        return StandardScaler().fit_transform(img)
