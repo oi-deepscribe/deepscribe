@@ -97,12 +97,12 @@ class StandardizeImageSizeTask(ProcessImageTask):
         ratio = float(self.target_size)/max(old_size)
         new_size = tuple([int(x*ratio) for x in old_size])
         # new_size should be in (width, height) format
-        im = cv2.resize(img, (new_size[1], new_size[0]))
+        img = cv2.resize(img, (new_size[1], new_size[0]))
         delta_w = self.target_size - new_size[1]
         delta_h = self.target_size - new_size[0]
         top, bottom = delta_h//2, delta_h-(delta_h//2)
         left, right = delta_w//2, delta_w-(delta_w//2)
-        color = [0, 0, 0]
+        color = 0
         new_im = cv2.copyMakeBorder(img, top, bottom, left, right, cv2.BORDER_CONSTANT,
             value=color)
 

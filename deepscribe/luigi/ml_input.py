@@ -98,7 +98,7 @@ class AssignDatasetTask(luigi.Task):
 
         stacked = np.stack(images, axis=0)
         #train/test split
-        train_imgs, train_labels, test_imgs, test_labels = train_test_split((stacked, categorical_labels), test_size = self.fractions[2])
+        train_imgs, test_imgs, train_labels, test_labels = train_test_split(stacked, categorical_labels, test_size = self.fractions[2])
 
 
         # split again for validation
@@ -107,18 +107,17 @@ class AssignDatasetTask(luigi.Task):
 
         valid_split = self.fractions[1]/(self.fractions[0] + self.fractions[1])
 
-        train_imgs, train_labels, valid_imgs, valid_labels = train_test_split((train_imgs, tran_labels), test_size=valid_split)
+        train_imgs,valid_imgs,train_labels, valid_labels = train_test_split(train_imgs, train_labels, test_size=valid_split)
 
 
-        with self.output().open('w') as out_file:
-            np.savez(out_file,
-                     train_imgs=train_imgs,
-                     test_imgs=test_imgs,
-                     valid_imgs=valid_imgs,
-                     train_labels=train_labels,
-                     test_labels=test_labels,
-                     valid_labels=valid_labels,
-                     classes=enc._classes)
+        np.savez(self.output().path,
+                 train_imgs=train_imgs,
+                 test_imgs=test_imgs,
+                 valid_imgs=valid_imgs,
+                 train_labels=train_labels,
+                 test_labels=test_labels,
+                 valid_labels=valid_labels,
+                 classes=enc.classes_)
 
 
     def output(self):
