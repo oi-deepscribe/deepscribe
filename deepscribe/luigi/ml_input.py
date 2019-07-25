@@ -97,6 +97,12 @@ class AssignDatasetTask(luigi.Task):
         categorical_labels = enc.fit_transform(labels)
 
         stacked = np.stack(images, axis=0)
+
+        #add extra channel dimension so it doesn't freak out
+        #
+
+        stacked = np.expand_dims(stacked, axis=-1)
+
         #train/test split
         train_imgs, test_imgs, train_labels, test_labels = train_test_split(stacked, categorical_labels, test_size = self.fractions[2])
 
