@@ -5,4 +5,6 @@ luigi --module deepscribe.luigi.training TrainModelTask --local-scheduler \
       --hdffolder data/processed/pfa_new \
       --target-size 200 \
       --epochs 5 \
-      --keep-categories '["1","2"]'  \
+      --batch_size 32 \
+      --classes '["1","2"]'  \
+      --data_split '[0.7, 0.1, 0.2]'

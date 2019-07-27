@@ -8,7 +8,10 @@ data/ochre
 #misc
 output/*
 .DS_Store
-# *.npz
+# not committing
+*.npz
+
+.idea
 
 *.jpg
 

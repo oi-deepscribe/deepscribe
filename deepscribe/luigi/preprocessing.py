@@ -6,10 +6,13 @@ from tqdm import tqdm
 import cv2
 import h5py
 
+
 class OchreDatasetTask(luigi.ExternalTask):
     imgfolder = luigi.Parameter()
+
     def output(self):
         return luigi.LocalTarget(self.imgfolder)
+
 
 class OchreToHD5Task(luigi.Task):
     # location of image folder
@@ -27,13 +30,12 @@ class OchreToHD5Task(luigi.Task):
             archive = h5py.File(self.temp_output_path)
             # iterate through directory, copy images
 
-
             for file in tqdm(os.listdir(self.input().path)):
-                #loading image from disk
+                # loading image from disk
                 img = cv2.imread("{}/{}".format(self.input().path, file))
 
                 if img is not None:
-                    #parsing filename according to OCHRE spec
+                    # parsing filename according to OCHRE spec
                     fname = os.path.splitext(file)[0]
 
                     sign, image_uuid, obj_uuid = fname.split("_")
@@ -41,13 +43,14 @@ class OchreToHD5Task(luigi.Task):
                     current_group = archive.require_group(sign)
 
                     dset = current_group.create_dataset(fname, data=img)
-                    dset.attrs['image_uuid'] = image_uuid
-                    dset.attrs['obj_uuid'] = obj_uuid
-                    dset.attrs['sign'] = sign
-                    dset.attrs['origin'] = "{}/{}".format(self.input().path, file)
+                    dset.attrs["image_uuid"] = image_uuid
+                    dset.attrs["obj_uuid"] = obj_uuid
+                    dset.attrs["sign"] = sign
+                    dset.attrs["origin"] = "{}/{}".format(self.input().path, file)
 
             archive.close()
 
     def output(self):
-        return luigi.LocalTarget("{}/{}.h5".format(self.hdffolder,
-                                                    os.path.basename(self.imgfolder)))
+        return luigi.LocalTarget(
+            "{}/{}.h5".format(self.hdffolder, os.path.basename(self.imgfolder))
+        )

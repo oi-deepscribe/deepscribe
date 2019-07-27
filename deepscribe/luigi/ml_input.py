@@ -1,4 +1,4 @@
-#processing images for input to TensorFlow
+# processing images for input to TensorFlow
 
 import luigi
 import os
@@ -10,19 +10,19 @@ from sklearn.preprocessing import LabelEncoder
 from sklearn.model_selection import train_test_split
 import numpy as np
 
+
 class SubsampleDatasetTask(luigi.Task):
-    '''
+    """
     Selecting classes from larger dataset
-    '''
+    """
+
     imgfolder = luigi.Parameter()
     hdffolder = luigi.Parameter()
-    target_size = luigi.IntParameter() #standardizing to square images
+    target_size = luigi.IntParameter()  # standardizing to square images
     keep_categories = luigi.ListParameter()
 
     def requires(self):
-        return RescaleImageValuesTask(self.imgfolder,
-                                      self.hdffolder,
-                                      self.target_size)
+        return RescaleImageValuesTask(self.imgfolder, self.hdffolder, self.target_size)
 
     def run(self):
         with self.output().temporary_path() as self.temp_output_path:
@@ -36,42 +36,51 @@ class SubsampleDatasetTask(luigi.Task):
                 for img in tqdm(original_archive[label].keys()):
                     npy_img = original_archive[label][img].value
                     new_dset = group.create_dataset(img, data=npy_img)
-                    #TODO: further abstraction?
-                    new_dset.attrs['image_uuid'] = original_archive[label][img].attrs['image_uuid']
-                    new_dset.attrs['obj_uuid'] = original_archive[label][img].attrs['obj_uuid']
-                    new_dset.attrs['sign'] = original_archive[label][img].attrs['sign']
-                    new_dset.attrs['origin'] = original_archive[label][img].attrs['origin']
+                    # TODO: further abstraction?
+                    new_dset.attrs["image_uuid"] = original_archive[label][img].attrs[
+                        "image_uuid"
+                    ]
+                    new_dset.attrs["obj_uuid"] = original_archive[label][img].attrs[
+                        "obj_uuid"
+                    ]
+                    new_dset.attrs["sign"] = original_archive[label][img].attrs["sign"]
+                    new_dset.attrs["origin"] = original_archive[label][img].attrs[
+                        "origin"
+                    ]
 
             new_archive.close()
             original_archive.close()
 
-
-
     def output(self):
-        return luigi.LocalTarget("{}/{}_{}.h5".format(self.hdffolder,
-                                                        os.path.basename(self.imgfolder),
-                                                        "_".join([str(cat) for cat in self.keep_categories])))
+        return luigi.LocalTarget(
+            "{}/{}_{}.h5".format(
+                self.hdffolder,
+                os.path.basename(self.imgfolder),
+                "_".join([str(cat) for cat in self.keep_categories]),
+            )
+        )
 
 
 class AssignDatasetTask(luigi.Task):
-    '''
+    """
     Assigns data to the train/validation/test sets. Returns .npz file with the different
     categories.
-    '''
+    """
+
     imgfolder = luigi.Parameter()
     hdffolder = luigi.Parameter()
-    target_size = luigi.IntParameter() #standardizing to square images
+    target_size = luigi.IntParameter()  # standardizing to square images
     keep_categories = luigi.ListParameter()
-    #TODO: this as param
-    fractions = [0.7, 0.1, 0.2] # train/valid/test fraction
+    fractions = luigi.ListParameter()  # train/valid/test fraction
 
     def requires(self):
-        return SubsampleDatasetTask(self.imgfolder, self.hdffolder, self.target_size, self.keep_categories)
-
+        return SubsampleDatasetTask(
+            self.imgfolder, self.hdffolder, self.target_size, self.keep_categories
+        )
 
     def run(self):
 
-        #TODO : validate fractions
+        # TODO : validate fractions
 
         # loads all data into memory.
         # TODO: not this.
@@ -98,33 +107,38 @@ class AssignDatasetTask(luigi.Task):
 
         stacked = np.stack(images, axis=0)
 
-        #add extra channel dimension so it doesn't freak out
+        # add extra channel dimension so it doesn't freak out
         #
 
         stacked = np.expand_dims(stacked, axis=-1)
 
-        #train/test split
-        train_imgs, test_imgs, train_labels, test_labels = train_test_split(stacked, categorical_labels, test_size = self.fractions[2])
-
+        # train/test split
+        train_imgs, test_imgs, train_labels, test_labels = train_test_split(
+            stacked, categorical_labels, test_size=self.fractions[2]
+        )
 
         # split again for validation
 
         # compute validation split
 
-        valid_split = self.fractions[1]/(self.fractions[0] + self.fractions[1])
+        valid_split = self.fractions[1] / (self.fractions[0] + self.fractions[1])
 
-        train_imgs,valid_imgs,train_labels, valid_labels = train_test_split(train_imgs, train_labels, test_size=valid_split)
+        train_imgs, valid_imgs, train_labels, valid_labels = train_test_split(
+            train_imgs, train_labels, test_size=valid_split
+        )
 
-
-        np.savez(self.output().path,
-                 train_imgs=train_imgs,
-                 test_imgs=test_imgs,
-                 valid_imgs=valid_imgs,
-                 train_labels=train_labels,
-                 test_labels=test_labels,
-                 valid_labels=valid_labels,
-                 classes=enc.classes_)
-
+        np.savez(
+            self.output().path,
+            train_imgs=train_imgs,
+            test_imgs=test_imgs,
+            valid_imgs=valid_imgs,
+            train_labels=train_labels,
+            test_labels=test_labels,
+            valid_labels=valid_labels,
+            classes=enc.classes_,
+        )
 
     def output(self):
-        return luigi.LocalTarget("{}_split.npz".format(os.path.splitext(self.input().path)[0]))
+        return luigi.LocalTarget(
+            "{}_split.npz".format(os.path.splitext(self.input().path)[0])
+        )
