@@ -7,6 +7,10 @@ import os
 from deepscribe.luigi.ml_input import AssignDatasetTask
 import numpy as np
 from sklearn.metrics import confusion_matrix
+import matplotlib
+
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
 
 
 class TrainModelTask(luigi.Task):
@@ -20,7 +24,11 @@ class TrainModelTask(luigi.Task):
 
     def requires(self):
         return AssignDatasetTask(
-            self.imgfolder, self.hdffolder, self.target_size, self.keep_categories
+            self.imgfolder,
+            self.hdffolder,
+            self.target_size,
+            self.keep_categories,
+            self.fractions,
         )
 
     # TODO: load this from an external model definition
@@ -103,10 +111,20 @@ class TestModelTask(luigi.Task):
     def requires(self):
         return {
             "model": TrainModelTask(
-                self.imgfolder, self.hdffolder, self.target_size, self.keep_categories
+                self.imgfolder,
+                self.hdffolder,
+                self.target_size,
+                self.keep_categories,
+                self.epochs,
+                self.batch_size,
+                self.fractions,
             ),
             "dataset": AssignDatasetTask(
-                self.imgfolder, self.hdffolder, self.target_size, self.keep_categories
+                self.imgfolder,
+                self.hdffolder,
+                self.target_size,
+                self.keep_categories,
+                self.fractions,
             ),
         }
 
@@ -124,9 +142,45 @@ class TestModelTask(luigi.Task):
 
         confusion = confusion_matrix(data["test_labels"], pred_labels)
 
-        np.savez(self.output().path, confusion)
+        np.save(self.output().path, confusion)
 
     def output(self):
         return luigi.LocalTarget(
-            "{}_confusion.npz".format(os.path.splitext(self.input().path)[0])
+            "{}_confusion.npy".format(os.path.splitext(self.input()["dataset"].path)[0])
+        )
+
+
+class PlotConfusionMatrixTask(luigi.Task):
+    imgfolder = luigi.Parameter()
+    hdffolder = luigi.Parameter()
+    target_size = luigi.IntParameter()  # standardizing to square images
+    keep_categories = luigi.ListParameter()
+    epochs = luigi.IntParameter()
+    batch_size = luigi.IntParameter()
+    fractions = luigi.ListParameter()  # train/valid/test fraction
+
+    def requires(self):
+        return TestModelTask(
+            self.imgfolder,
+            self.hdffolder,
+            self.target_size,
+            self.keep_categories,
+            self.epochs,
+            self.batch_size,
+            self.fractions,
+        )
+
+    def run(self):
+        # load matrix
+
+        confusion = np.load(self.input().path)
+
+        plt.figure()
+        plt.title("Confusion matrix from {}".format(self.input().path))
+        plt.matshow(confusion)
+        plt.savefig(self.output().path)
+
+    def output(self):
+        return luigi.LocalTarget(
+            "{}_confusion.png".format(os.path.splitext(self.input().path)[0])
         )
