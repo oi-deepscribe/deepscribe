@@ -5,22 +5,23 @@ import luigi
 import tensorflow.keras as kr
 import os
 from deepscribe.luigi.ml_input import AssignDatasetTask
+from deepscribe.models.baselines import build_cnn_classifier
 import numpy as np
 from sklearn.metrics import confusion_matrix
 import matplotlib
+import json
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
 
-class TrainModelTask(luigi.Task):
+class TrainModelFromDefinitionTask(luigi.Task):
     imgfolder = luigi.Parameter()
     hdffolder = luigi.Parameter()
     target_size = luigi.IntParameter()  # standardizing to square images
     keep_categories = luigi.ListParameter()
-    epochs = luigi.IntParameter()
-    batch_size = luigi.IntParameter()
     fractions = luigi.ListParameter()  # train/valid/test fraction
+    model_definition = luigi.Parameter()  # JSON file with model definition specs
 
     def requires(self):
         return AssignDatasetTask(
@@ -31,42 +32,24 @@ class TrainModelTask(luigi.Task):
             self.fractions,
         )
 
-    # TODO: load this from an external model definition
-    def build_model(self):
-        model = kr.models.Sequential()
-
-        model.add(
-            kr.layers.Conv2D(
-                64,
-                kernel_size=(16, 16),
-                strides=(1, 1),
-                activation="relu",
-                input_shape=(self.target_size, self.target_size, 1),
-            )
-        )
-        model.add(kr.layers.MaxPooling2D(pool_size=(3, 3), strides=(1, 1)))
-        model.add(kr.layers.BatchNormalization())
-        model.add(kr.layers.Dropout(0.4))
-        model.add(
-            kr.layers.Conv2D(32, kernel_size=(8, 8), strides=(1, 1), activation="relu")
-        )
-        model.add(kr.layers.BatchNormalization())
-        model.add(kr.layers.MaxPooling2D(pool_size=(2, 2), strides=(1, 1)))
-
-        model.add(kr.layers.Dropout(0.6))
-        model.add(kr.layers.Flatten())
-        model.add(kr.layers.Dense(512, activation="relu"))
-        model.add(kr.layers.Dense(len(self.keep_categories), activation="softmax"))
-
-        return model
-
     def run(self):
+
+        # load model definition
+        with open(self.model_definition, "r") as modelf:
+            model_params = json.load(modelf)
+
         # build model
-        model = self.build_model()
+        model = build_cnn_classifier(
+            (self.target_size, self.target_size),
+            len(self.keep_categories),
+            model_params,
+        )
 
         # TODO: set learning rate
         model.compile(
-            optimizer="adam", loss="categorical_crossentropy", metrics=["acc"]
+            optimizer=model_params["optimizer"],
+            loss="categorical_crossentropy",
+            metrics=["acc"],
         )
 
         # load data
@@ -80,8 +63,8 @@ class TrainModelTask(luigi.Task):
         history = model.fit(
             data["train_imgs"],
             kr.utils.to_categorical(data["train_labels"]),
-            batch_size=32,
-            epochs=5,
+            batch_size=model_params["batch_size"],
+            epochs=model_params["epochs"],
             validation_data=(
                 data["valid_imgs"],
                 kr.utils.to_categorical(data["valid_labels"]),
@@ -93,8 +76,10 @@ class TrainModelTask(luigi.Task):
 
     def output(self):
         return luigi.LocalTarget(
-            "{}_{}_epochs_model.h5".format(
-                os.path.splitext(self.input().path)[0], self.epochs
+            "{}_{}_epochs_{}_model.h5".format(
+                os.path.splitext(self.input().path)[0],
+                self.epochs,
+                os.path.basename(self.model_definition),
             )
         )
 
@@ -104,20 +89,18 @@ class TestModelTask(luigi.Task):
     hdffolder = luigi.Parameter()
     target_size = luigi.IntParameter()  # standardizing to square images
     keep_categories = luigi.ListParameter()
-    epochs = luigi.IntParameter()
-    batch_size = luigi.IntParameter()
     fractions = luigi.ListParameter()  # train/valid/test fraction
+    model_definition = luigi.Parameter()  # JSON file with model definition specs
 
     def requires(self):
         return {
-            "model": TrainModelTask(
+            "model": TrainModelFromDefinitionTask(
                 self.imgfolder,
                 self.hdffolder,
                 self.target_size,
                 self.keep_categories,
-                self.epochs,
-                self.batch_size,
                 self.fractions,
+                self.model_definition,
             ),
             "dataset": AssignDatasetTask(
                 self.imgfolder,
@@ -155,9 +138,8 @@ class PlotConfusionMatrixTask(luigi.Task):
     hdffolder = luigi.Parameter()
     target_size = luigi.IntParameter()  # standardizing to square images
     keep_categories = luigi.ListParameter()
-    epochs = luigi.IntParameter()
-    batch_size = luigi.IntParameter()
     fractions = luigi.ListParameter()  # train/valid/test fraction
+    model_definition = luigi.Parameter()  # JSON file with model definition specs
 
     def requires(self):
         return TestModelTask(
@@ -165,9 +147,8 @@ class PlotConfusionMatrixTask(luigi.Task):
             self.hdffolder,
             self.target_size,
             self.keep_categories,
-            self.epochs,
-            self.batch_size,
             self.fractions,
+            self.model_definition,
         )
 
     def run(self):
