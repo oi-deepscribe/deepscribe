@@ -6,6 +6,7 @@
 "dropout": 0.5,
 "conv2_kernels": 8,
 "conv2_ksize":  5,
+"conv2_stride": 1,
 "activation": "relu",
 "pool2_size": 3,
 "pool2_stride": 1,

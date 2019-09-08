@@ -40,7 +40,7 @@ class TrainModelFromDefinitionTask(luigi.Task):
 
         # build model
         model = build_cnn_classifier(
-            (self.target_size, self.target_size),
+            (self.target_size, self.target_size, 1),
             len(self.keep_categories),
             model_params,
         )
@@ -58,10 +58,19 @@ class TrainModelFromDefinitionTask(luigi.Task):
 
         # converting to one-hot
 
+        # convert to correct tensor size
+
+        if len(data["train_imgs"].shape) < 4:
+            train_data = np.expand_dims(data["train_imgs"], axis=-1)
+        else:
+            train_data = data["train_imgs"]
+
+        print(train_data.shape)
+
         # train model!
         # TODO: early stopping
         history = model.fit(
-            data["train_imgs"],
+            train_data,
             kr.utils.to_categorical(data["train_labels"]),
             batch_size=model_params["batch_size"],
             epochs=model_params["epochs"],
@@ -75,10 +84,15 @@ class TrainModelFromDefinitionTask(luigi.Task):
         model.save(self.output().path)
 
     def output(self):
+
+        # load model definition - to set output params
+        with open(self.model_definition, "r") as modelf:
+            model_params = json.load(modelf)
+
         return luigi.LocalTarget(
             "{}_{}_epochs_{}_model.h5".format(
                 os.path.splitext(self.input().path)[0],
-                self.epochs,
+                model_params["epochs"],
                 os.path.basename(self.model_definition),
             )
         )
