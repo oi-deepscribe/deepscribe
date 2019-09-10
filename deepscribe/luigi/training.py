@@ -39,6 +39,10 @@ class TrainModelFromDefinitionTask(luigi.Task):
         with open(self.model_definition, "r") as modelf:
             model_params = json.load(modelf)
 
+        # update the params dict with number of classes
+
+        model_params["num_classes"] = len(self.keep_categories)
+
         # load data
         #
         data = np.load(self.input().path)
@@ -101,6 +105,8 @@ class RunTalosScanTask(luigi.Task):
         # load talos parameters
         with open(self.talos_params, "r") as modelf:
             talos_params = json.load(modelf)
+
+        talos_params["num_classes"] = len(self.keep_categories)
 
         # load data
         data = np.load(self.input().path)
