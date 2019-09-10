@@ -12,3 +12,5 @@ dependencies:
   - opencv
   - h5py
   - luigi
+  - pip:
+      - talos
