@@ -10,6 +10,7 @@ module load cuda/9.1
 luigi --module deepscribe.luigi.training RunTalosScanTask --local-scheduler \
       --imgfolder data/ochre/a_pfa \
       --hdffolder data/processed/pfa_new \
+      --modelsfolder models \
       --target-size 50 \
       --keep-categories '["1","2"]'  \
       --fractions '[0.7, 0.1, 0.2]' \

@@ -20,6 +20,7 @@ from pathlib import Path
 class TrainModelFromDefinitionTask(luigi.Task):
     imgfolder = luigi.Parameter()
     hdffolder = luigi.Parameter()
+    modelsfolder = luigi.Parameter()
     target_size = luigi.IntParameter()  # standardizing to square images
     keep_categories = luigi.ListParameter()
     fractions = luigi.ListParameter()  # train/valid/test fraction
@@ -70,20 +71,15 @@ class TrainModelFromDefinitionTask(luigi.Task):
 
     def output(self):
 
-        # load model definition - to set output params
-        with open(self.model_definition, "r") as modelf:
-            model_params = json.load(modelf)
-
         p = Path(self.model_definition)
 
-        return luigi.LocalTarget(
-            "{}_{}_model.h5".format(os.path.splitext(self.input().path)[0], p.stem)
-        )
+        return luigi.LocalTarget("{}/{}_trained.h5".format(self.modelsfolder, p.stem))
 
 
 class RunTalosScanTask(luigi.Task):
     imgfolder = luigi.Parameter()
     hdffolder = luigi.Parameter()
+    modelsfolder = luigi.Parameter()
     target_size = luigi.IntParameter()  # standardizing to square images
     keep_categories = luigi.ListParameter()
     fractions = luigi.ListParameter()  # train/valid/test fraction
@@ -145,8 +141,8 @@ class RunTalosScanTask(luigi.Task):
         p = Path(self.talos_params)
 
         return luigi.LocalTarget(
-            "{}_{}_{}.json".format(
-                os.path.splitext(self.input().path)[0], p.stem, self.subsample
+            "{}/{}_talos_subsampled_{}.json".format(
+                self.modelsfolder, p.stem, self.subsample
             )
         )
 
