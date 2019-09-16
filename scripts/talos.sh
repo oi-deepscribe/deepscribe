@@ -14,6 +14,6 @@ luigi --module deepscribe.luigi.training RunTalosScanTask --local-scheduler \
       --target-size 50 \
       --keep-categories '["1","2"]'  \
       --fractions '[0.7, 0.1, 0.2]' \
-      --talos-params data/talos_params/simple_cnn.json \
+      --talos-params data/talos_params/varied_knums.json \
       --subsample 1
 
