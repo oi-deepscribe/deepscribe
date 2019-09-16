@@ -7,7 +7,7 @@
 module load cuda/9.1
 
 
-luigi --module deepscribe.luigi.training TrainModelFromDefinitionTask --local-scheduler \
+luigi --module deepscribe.luigi.training TrainKerasModelFromDefinitionTask --local-scheduler \
       --imgfolder data/ochre/a_pfa \
       --hdffolder data/processed/pfa_new \
       --modelsfolder models \

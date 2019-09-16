@@ -98,7 +98,9 @@ def cnn_classifier(x_train, y_train, x_val, y_val, params):
 
     # TODO: set learning rate
     model.compile(
-        optimizer=params["optimizer"], loss="categorical_crossentropy", metrics=["acc"]
+        optimizer=params["optimizer"],
+        loss="categorical_crossentropy",
+        metrics=["acc", kr.metrics.AUC()],
     )
 
     # TODO: early stopping

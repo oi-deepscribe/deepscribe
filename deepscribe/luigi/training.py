@@ -7,17 +7,24 @@ import os
 from deepscribe.luigi.ml_input import AssignDatasetTask
 from deepscribe.models.baselines import cnn_classifier
 import numpy as np
-from sklearn.metrics import confusion_matrix
-import matplotlib
 import json
+from pathlib import Path
+import sklearn as sk
+import sklearn.metrics
+import sklearn.linear_model
+import sklearn.neighbors
+import sklearn.ensemble
+import pickle as pk
+
+# needed to get Talos to not freak out
+import matplotlib
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import talos
-from pathlib import Path
 
-
-class TrainModelFromDefinitionTask(luigi.Task):
+# kept separate
+class TrainKerasModelFromDefinitionTask(luigi.Task):
     imgfolder = luigi.Parameter()
     hdffolder = luigi.Parameter()
     modelsfolder = luigi.Parameter()
@@ -147,84 +154,112 @@ class RunTalosScanTask(luigi.Task):
         )
 
 
-class TestModelTask(luigi.Task):
+# abstract task, overriden
+class TrainSKLModelFromDefinitionTask(luigi.Task):
     imgfolder = luigi.Parameter()
     hdffolder = luigi.Parameter()
+    modelsfolder = luigi.Parameter()
     target_size = luigi.IntParameter()  # standardizing to square images
     keep_categories = luigi.ListParameter()
     fractions = luigi.ListParameter()  # train/valid/test fraction
     model_definition = luigi.Parameter()  # JSON file with model definition specs
 
     def requires(self):
-        return {
-            "model": TrainModelFromDefinitionTask(
-                self.imgfolder,
-                self.hdffolder,
-                self.target_size,
-                self.keep_categories,
-                self.fractions,
-                self.model_definition,
-            ),
-            "dataset": AssignDatasetTask(
-                self.imgfolder,
-                self.hdffolder,
-                self.target_size,
-                self.keep_categories,
-                self.fractions,
-            ),
-        }
-
-    def run(self):
-        # load TF model and dataset
-        model = kr.models.load_model(self.input()["model"].path)
-        data = np.load(self.input()["dataset"].path)
-
-        # make predictions on data
-
-        # TODO: determine format of model.predict
-        pred_labels = model.predict(data["test_imgs"])
-
-        # compute confusion matrix
-
-        confusion = confusion_matrix(data["test_labels"], pred_labels)
-
-        np.save(self.output().path, confusion)
-
-    def output(self):
-        return luigi.LocalTarget(
-            "{}_confusion.npy".format(os.path.splitext(self.input()["dataset"].path)[0])
-        )
-
-
-class PlotConfusionMatrixTask(luigi.Task):
-    imgfolder = luigi.Parameter()
-    hdffolder = luigi.Parameter()
-    target_size = luigi.IntParameter()  # standardizing to square images
-    keep_categories = luigi.ListParameter()
-    fractions = luigi.ListParameter()  # train/valid/test fraction
-    model_definition = luigi.Parameter()  # JSON file with model definition specs
-
-    def requires(self):
-        return TestModelTask(
+        return AssignDatasetTask(
             self.imgfolder,
             self.hdffolder,
             self.target_size,
             self.keep_categories,
             self.fractions,
-            self.model_definition,
         )
 
+    def get_model(self):
+        raise NotImplementedError
+
     def run(self):
-        # load matrix
+        data = np.load(self.input().path)
 
-        confusion = np.load(self.input().path)
+        input_x = data["train_imgs"]
 
-        plt.figure()
-        plt.title("Confusion matrix from {}".format(self.input().path))
-        plt.matshow(confusion)
-        plt.savefig(self.output().path)
+        # reshape data for input to sklearn classifier
+
+        n_examples = input_x.shape[0]
+
+        vector_dim = input_x.shape[1] * input_x.shape[2] * input_x.shape[3]
+
+        input_x_flattened = input_x.reshape(n_examples, vector_dim)
+        # TODO: set terms from input file
+        model = self.get_model()
+
+        model.fit(input_x_flattened, data["train_labels"])
+
+        # compute performance on validation data
+
+        # reshape
+
+        valid_x = data["valid_imgs"]
+
+        valid_x_flattened = valid_x.reshape(
+            valid_x.shape[0], valid_x.shape[1] * valid_x.shape[2] * valid_x.shape[3]
+        )
+
+        pred_valid_y = model.predict(valid_x_flattened)
+
+        acc = sk.metrics.accuracy_score(data["valid_labels"], pred_valid_y)
+
+        print("Model accuracy on validation data: {}".format(acc))
+
+        # compute AUC score
+
+        auc = sk.metrics.roc_auc_score(
+            data["valid_labels"], model.predict_proba(valid_x_flattened)[:, 1]
+        )
+
+        print("Model AUC on validation data: {}".format(auc))
+
+        # builtin luigi doesn't work with bytes mode?
+        with open(self.output().path, "wb") as outf:
+            pk.dump(model, outf)
 
     def output(self):
+        p = Path(self.model_definition)
+        p_data = Path(self.input().path)
+
         return luigi.LocalTarget(
-            "{}_confusion.png".format(os.path.splitext(self.input().path)[0])
+            "{}/{}_{}_trained.pkl".format(self.modelsfolder, p.stem, p_data.stem)
+        )
+
+
+# trains a linear model from sklearn
+class TrainLinearModelTask(TrainSKLModelFromDefinitionTask):
+    def get_model(self):
+        return sk.linear_model.LogisticRegression(verbose=True, n_jobs=-1)
+
+
+# TODO: refactor to avoid repeated code
+class TrainKNNModelTask(TrainSKLModelFromDefinitionTask):
+    def get_model(self):
+        return sk.neighbors.KNeighborsClassifier(n_jobs=-1)
+
+
+class TrainRFModelTask(TrainSKLModelFromDefinitionTask):
+    def get_model(self):
+
+        # load model
+        with open(self.model_definition, "r") as modelf:
+            model_params = json.load(modelf)
+
+        return sk.ensemble.RandomForestClassifier(
+            verbose=1, n_jobs=-1, n_estimators=model_params["estimators"]
+        )
+
+
+class TrainGBModelTask(TrainSKLModelFromDefinitionTask):
+    def get_model(self):
+        # load model
+        with open(self.model_definition, "r") as modelf:
+            model_params = json.load(modelf)
+
+        return sk.ensemble.GradientBoostingClassifier(
+            verbose=1, n_estimators=model_params["estimators"]
         )
