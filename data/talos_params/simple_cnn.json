@@ -12,5 +12,5 @@
 "pool2_stride": [1],
 "dense_size": [128],
 "batch_size":  [32],
-"epochs": [32],
+"epochs": [1],
 "optimizer": ["adam"]}

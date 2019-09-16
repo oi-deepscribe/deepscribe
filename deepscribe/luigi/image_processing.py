@@ -50,9 +50,25 @@ class ProcessImageTask(luigi.Task):
             original_archive.close()
 
     def output(self):
+
+        # append the rest of the parameter values
+
+        additional_params = [
+            param
+            for param, obj in self.get_params()
+            if param not in ["hdffolder", "imgfolder"]
+        ]
+
+        additional_param_vals = [
+            str(self.__getattribute__(param)) for param in additional_params
+        ]
+
         return luigi.LocalTarget(
-            "{}/{}_{}.h5".format(
-                self.hdffolder, os.path.basename(self.imgfolder), self.identifier
+            "{}/{}_{}_{}.h5".format(
+                self.hdffolder,
+                os.path.basename(self.imgfolder),
+                self.identifier,
+                "_".join(additional_param_vals),
             )
         )
 

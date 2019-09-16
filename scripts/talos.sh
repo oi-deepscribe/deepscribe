@@ -10,9 +10,9 @@ module load cuda/9.1
 luigi --module deepscribe.luigi.training RunTalosScanTask --local-scheduler \
       --imgfolder data/ochre/a_pfa \
       --hdffolder data/processed/pfa_new \
-      --target-size 200 \
+      --target-size 50 \
       --keep-categories '["1","2"]'  \
       --fractions '[0.7, 0.1, 0.2]' \
       --talos-params data/talos_params/simple_cnn.json \
-      --subsample 0.001
+      --subsample 1
 

@@ -14,6 +14,7 @@ import json
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import talos
+from pathlib import Path
 
 
 class TrainModelFromDefinitionTask(luigi.Task):
@@ -73,12 +74,10 @@ class TrainModelFromDefinitionTask(luigi.Task):
         with open(self.model_definition, "r") as modelf:
             model_params = json.load(modelf)
 
+        p = Path(self.model_definition)
+
         return luigi.LocalTarget(
-            "{}_{}_epochs_{}_model.h5".format(
-                os.path.splitext(self.input().path)[0],
-                model_params["epochs"],
-                os.path.basename(self.model_definition),
-            )
+            "{}_{}_model.h5".format(os.path.splitext(self.input().path)[0], p.stem)
         )
 
 
@@ -106,7 +105,10 @@ class RunTalosScanTask(luigi.Task):
         with open(self.talos_params, "r") as modelf:
             talos_params = json.load(modelf)
 
-        talos_params["num_classes"] = len(self.keep_categories)
+        # set the number of classes here
+        talos_params["num_classes"] = [len(self.keep_categories)]
+
+        p = Path(self.talos_params)
 
         # load data
         data = np.load(self.input().path)
@@ -128,6 +130,7 @@ class RunTalosScanTask(luigi.Task):
             model=cnn_classifier,
             params=talos_params,
             fraction_limit=self.subsample,
+            experiment_name=p.stem,
         )
 
         # serialize scan object and save
@@ -139,11 +142,11 @@ class RunTalosScanTask(luigi.Task):
 
     def output(self):
 
+        p = Path(self.talos_params)
+
         return luigi.LocalTarget(
             "{}_{}_{}.json".format(
-                os.path.splitext(self.input().path)[0],
-                os.path.basename(self.talos_params),
-                self.subsample,
+                os.path.splitext(self.input().path)[0], p.stem, self.subsample
             )
         )
 

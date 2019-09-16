@@ -53,9 +53,10 @@ class SubsampleDatasetTask(luigi.Task):
 
     def output(self):
         return luigi.LocalTarget(
-            "{}/{}_{}.h5".format(
+            "{}/{}_{}_{}.h5".format(
                 self.hdffolder,
                 os.path.basename(self.imgfolder),
+                self.target_size,
                 "_".join([str(cat) for cat in self.keep_categories]),
             )
         )
