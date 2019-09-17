@@ -12,6 +12,8 @@ output/*
 # not committing
 *.npz
 
+login.sh
+
 .idea
 
 *.jpg
