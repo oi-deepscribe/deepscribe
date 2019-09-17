@@ -65,7 +65,7 @@ class TrainKerasModelFromDefinitionTask(luigi.Task):
         else:
             train_data = data["train_imgs"]
 
-        model = cnn_classifier(
+        _, model = cnn_classifier(
             train_data,
             kr.utils.to_categorical(data["train_labels"]),
             data["valid_imgs"],
@@ -104,6 +104,8 @@ class RunTalosScanTask(luigi.Task):
 
     def run(self):
 
+        self.output().makedirs()
+
         # load talos parameters
         with open(self.talos_params, "r") as modelf:
             talos_params = json.load(modelf)
@@ -136,19 +138,16 @@ class RunTalosScanTask(luigi.Task):
             experiment_name=p.stem,
         )
 
-        # serialize scan object and save
+        # save DataFrame as CSV
 
-        # TODO: check if serialization works
-
-        with self.output().open("w") as outf:
-            json.dump(scan_object, outf)
+        scan_object.data.to_pickle(self.output().path)
 
     def output(self):
 
         p = Path(self.talos_params)
 
         return luigi.LocalTarget(
-            "{}/{}_talos_subsampled_{}.json".format(
+            "{}/talos/{}_talos_subsampled_{}.pkl".format(
                 self.modelsfolder, p.stem, self.subsample
             )
         )

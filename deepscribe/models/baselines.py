@@ -112,4 +112,4 @@ def cnn_classifier(x_train, y_train, x_val, y_val, params):
         validation_data=(x_val, y_val),
     )
 
-    return model
+    return history, model

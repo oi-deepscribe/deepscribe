@@ -1,5 +1,5 @@
 import luigi
-from .training import TrainModelFromDefinitionTask
+from .training import TrainKerasModelFromDefinitionTask
 from .ml_input import AssignDatasetTask
 from sklearn.metrics import confusion_matrix
 import matplotlib
