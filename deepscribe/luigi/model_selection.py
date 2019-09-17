@@ -2,15 +2,20 @@ import luigi
 from .training import TrainKerasModelFromDefinitionTask
 from .ml_input import AssignDatasetTask
 from sklearn.metrics import confusion_matrix
+import numpy as np
+import os
+import tensorflow.keras as kr
 import matplotlib
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
 
+# produces confusion matrics from test data
 class TestModelTask(luigi.Task):
     imgfolder = luigi.Parameter()
     hdffolder = luigi.Parameter()
+    modelsfolder = luigi.Parameter()
     target_size = luigi.IntParameter()  # standardizing to square images
     keep_categories = luigi.ListParameter()
     fractions = luigi.ListParameter()  # train/valid/test fraction
@@ -18,9 +23,10 @@ class TestModelTask(luigi.Task):
 
     def requires(self):
         return {
-            "model": TrainModelFromDefinitionTask(
+            "model": TrainKerasModelFromDefinitionTask(
                 self.imgfolder,
                 self.hdffolder,
+                self.modelsfolder,
                 self.target_size,
                 self.keep_categories,
                 self.fractions,
@@ -60,6 +66,7 @@ class TestModelTask(luigi.Task):
 class PlotConfusionMatrixTask(luigi.Task):
     imgfolder = luigi.Parameter()
     hdffolder = luigi.Parameter()
+    modelsfolder = luigi.Parameter()
     target_size = luigi.IntParameter()  # standardizing to square images
     keep_categories = luigi.ListParameter()
     fractions = luigi.ListParameter()  # train/valid/test fraction
@@ -69,6 +76,7 @@ class PlotConfusionMatrixTask(luigi.Task):
         return TestModelTask(
             self.imgfolder,
             self.hdffolder,
+            self.modelsfolder,
             self.target_size,
             self.keep_categories,
             self.fractions,

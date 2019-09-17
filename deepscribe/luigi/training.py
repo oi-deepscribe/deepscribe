@@ -208,13 +208,40 @@ class TrainSKLModelFromDefinitionTask(luigi.Task):
 
         print("Model accuracy on validation data: {}".format(acc))
 
+        balanced_acc = sk.metrics.balanced_accuracy_score(
+            data["valid_labels"], pred_valid_y
+        )
+        print("balanced accuracy score on validation data: {}".format(balanced_acc))
+
         # compute AUC score
 
-        auc = sk.metrics.roc_auc_score(
-            data["valid_labels"], model.predict_proba(valid_x_flattened)[:, 1]
+        # convert data to categorical
+
+        validation_onehot = kr.utils.to_categorical(data["valid_labels"])
+
+        auc_macro = sk.metrics.roc_auc_score(
+            validation_onehot, model.predict_proba(valid_x_flattened), average="macro"
         )
 
-        print("Model AUC on validation data: {}".format(auc))
+        print("Macro AUC on validation data: {}".format(auc_macro))
+
+        auc_micro = sk.metrics.roc_auc_score(
+            validation_onehot, model.predict_proba(valid_x_flattened), average="micro"
+        )
+
+        print("Micro AUC on validation data: {}".format(auc_micro))
+
+        f1_macro = sk.metrics.f1_score(
+            data["valid_labels"], pred_valid_y, average="macro"
+        )
+
+        print("Macro F1 on validation data: {}".format(f1_macro))
+
+        f1_micro = sk.metrics.f1_score(
+            data["valid_labels"], pred_valid_y, average="micro"
+        )
+
+        print("Micro F1 on validation data: {}".format(f1_micro))
 
         # builtin luigi doesn't work with bytes mode?
         with open(self.output().path, "wb") as outf:
