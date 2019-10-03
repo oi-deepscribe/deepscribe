@@ -97,3 +97,15 @@ class PlotConfusionMatrixTask(luigi.Task):
         return luigi.LocalTarget(
             "{}_confusion.png".format(os.path.splitext(self.input().path)[0])
         )
+
+
+# selects the best architecture for this task, saves it to a JSON w/result vals.
+class SelectBestArchitectureTask(luigi.Task):
+    imgfolder = luigi.Parameter()
+    hdffolder = luigi.Parameter()
+    modelsfolder = luigi.Parameter()
+    target_size = luigi.IntParameter()  # standardizing to square images
+    keep_categories = luigi.ListParameter()
+    fractions = luigi.ListParameter()  # train/valid/test fraction
+    talos_params = luigi.Parameter()  # JSON file with model definition specs
+    subsample = luigi.FloatParameter()

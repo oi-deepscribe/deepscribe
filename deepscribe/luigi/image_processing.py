@@ -7,6 +7,7 @@ import h5py
 from tqdm import tqdm
 from deepscribe.luigi.preprocessing import OchreToHD5Task
 from sklearn.preprocessing import StandardScaler
+from skimage.util import random_noise
 
 
 class ProcessImageTask(luigi.Task):
@@ -33,18 +34,20 @@ class ProcessImageTask(luigi.Task):
                 for img in tqdm(original_archive[label].keys()):
                     npy_img = original_archive[label][img].value
                     processed_img = self.process_image(npy_img)
-                    new_dset = group.create_dataset(img, data=processed_img)
-                    # TODO: further abstraction?
-                    new_dset.attrs["image_uuid"] = original_archive[label][img].attrs[
-                        "image_uuid"
-                    ]
-                    new_dset.attrs["obj_uuid"] = original_archive[label][img].attrs[
-                        "obj_uuid"
-                    ]
-                    new_dset.attrs["sign"] = original_archive[label][img].attrs["sign"]
-                    new_dset.attrs["origin"] = original_archive[label][img].attrs[
-                        "origin"
-                    ]
+
+                    # check if the type is list - if so, assume returning a list of images with the same label
+
+                    # casting to a single element list to reuse code
+                    if not isinstance(processed_img, list):
+                        processed_img = [processed_img]
+
+                    for i, processed in enumerate(processed_img):
+                        new_dset = group.create_dataset(
+                            img + "_aug_{}".format(i), data=processed
+                        )
+
+                        for key, val in original_archive[label][img].attrs.items():
+                            new_dset.attrs[key] = val
 
             new_archive.close()
             original_archive.close()
@@ -148,3 +151,22 @@ class RescaleImageValuesTask(ProcessImageTask):
 
     def process_image(self, img):
         return StandardScaler().fit_transform(img)
+
+
+class AddGaussianNoiseTask(ProcessImageTask):
+    # location of image folder
+    imgfolder = luigi.Parameter()
+    hdffolder = luigi.Parameter()
+    target_size = luigi.IntParameter()  # standardizing to square images
+    identifier = "noise_augmented"
+    num_augment = luigi.IntParameter()
+
+    def requires(self):
+        return RescaleImageValuesTask(self.imgfolder, self.hdffolder, self.target_size)
+
+    def process_image(self, img):
+
+        return [img] + [
+            random_noise(img, mode="gaussian", clip=True)
+            for i in range(self.num_augment)
+        ]

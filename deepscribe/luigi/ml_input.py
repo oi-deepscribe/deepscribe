@@ -5,7 +5,7 @@ import os
 from tqdm import tqdm
 import cv2
 import h5py
-from deepscribe.luigi.image_processing import RescaleImageValuesTask
+from deepscribe.luigi.image_processing import AddGaussianNoiseTask
 from sklearn.preprocessing import LabelEncoder
 from sklearn.model_selection import train_test_split
 import numpy as np
@@ -20,9 +20,12 @@ class SubsampleDatasetTask(luigi.Task):
     hdffolder = luigi.Parameter()
     target_size = luigi.IntParameter()  # standardizing to square images
     keep_categories = luigi.ListParameter()
+    num_augment = luigi.IntParameter()
 
     def requires(self):
-        return RescaleImageValuesTask(self.imgfolder, self.hdffolder, self.target_size)
+        return AddGaussianNoiseTask(
+            self.imgfolder, self.hdffolder, self.target_size, self.num_augment
+        )
 
     def run(self):
         with self.output().temporary_path() as self.temp_output_path:
@@ -53,11 +56,12 @@ class SubsampleDatasetTask(luigi.Task):
 
     def output(self):
         return luigi.LocalTarget(
-            "{}/{}_{}_{}.h5".format(
+            "{}/{}_{}_{}_aug_{}.h5".format(
                 self.hdffolder,
                 os.path.basename(self.imgfolder),
                 self.target_size,
                 "_".join([str(cat) for cat in self.keep_categories]),
+                self.num_augment,
             )
         )
 
@@ -73,10 +77,15 @@ class AssignDatasetTask(luigi.Task):
     target_size = luigi.IntParameter()  # standardizing to square images
     keep_categories = luigi.ListParameter()
     fractions = luigi.ListParameter()  # train/valid/test fraction
+    num_augment = luigi.IntParameter(default=0)
 
     def requires(self):
         return SubsampleDatasetTask(
-            self.imgfolder, self.hdffolder, self.target_size, self.keep_categories
+            self.imgfolder,
+            self.hdffolder,
+            self.target_size,
+            self.keep_categories,
+            self.num_augment,
         )
 
     def run(self):
