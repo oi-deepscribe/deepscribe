@@ -32,6 +32,7 @@ class TrainKerasModelFromDefinitionTask(luigi.Task):
     keep_categories = luigi.ListParameter()
     fractions = luigi.ListParameter()  # train/valid/test fraction
     model_definition = luigi.Parameter()  # JSON file with model definition specs
+    num_augment = luigi.IntParameter(default=0)
 
     def requires(self):
         return AssignDatasetTask(
@@ -40,6 +41,7 @@ class TrainKerasModelFromDefinitionTask(luigi.Task):
             self.target_size,
             self.keep_categories,
             self.fractions,
+            self.num_augment,
         )
 
     def run(self):
@@ -79,8 +81,11 @@ class TrainKerasModelFromDefinitionTask(luigi.Task):
     def output(self):
 
         p = Path(self.model_definition)
+        p_data = Path(self.input().path)
 
-        return luigi.LocalTarget("{}/{}_trained.h5".format(self.modelsfolder, p.stem))
+        return luigi.LocalTarget(
+            "{}/{}_{}_trained.h5".format(self.modelsfolder, p.stem, p_data.stem)
+        )
 
 
 class RunTalosScanTask(luigi.Task):

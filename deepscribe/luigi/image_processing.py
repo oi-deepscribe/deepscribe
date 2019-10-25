@@ -8,6 +8,8 @@ from tqdm import tqdm
 from deepscribe.luigi.preprocessing import OchreToHD5Task
 from sklearn.preprocessing import StandardScaler
 from skimage.util import random_noise
+import numpy as np
+from typing import List
 
 
 class ProcessImageTask(luigi.Task):
@@ -35,19 +37,10 @@ class ProcessImageTask(luigi.Task):
                     npy_img = original_archive[label][img].value
                     processed_img = self.process_image(npy_img)
 
-                    # check if the type is list - if so, assume returning a list of images with the same label
+                    new_dset = group.create_dataset(img, data=processed_img)
 
-                    # casting to a single element list to reuse code
-                    if not isinstance(processed_img, list):
-                        processed_img = [processed_img]
-
-                    for i, processed in enumerate(processed_img):
-                        new_dset = group.create_dataset(
-                            img + "_aug_{}".format(i), data=processed
-                        )
-
-                        for key, val in original_archive[label][img].attrs.items():
-                            new_dset.attrs[key] = val
+                    for key, val in original_archive[label][img].attrs.items():
+                        new_dset.attrs[key] = val
 
             new_archive.close()
             original_archive.close()
@@ -153,20 +146,73 @@ class RescaleImageValuesTask(ProcessImageTask):
         return StandardScaler().fit_transform(img)
 
 
-class AddGaussianNoiseTask(ProcessImageTask):
+# change task design - require creating subgroup for each label
+# to ensure that all labels are assigned properly in the next step.
+class AddGaussianNoiseTask(luigi.Task):
     # location of image folder
     imgfolder = luigi.Parameter()
     hdffolder = luigi.Parameter()
     target_size = luigi.IntParameter()  # standardizing to square images
-    identifier = "noise_augmented"
     num_augment = luigi.IntParameter()
 
     def requires(self):
         return RescaleImageValuesTask(self.imgfolder, self.hdffolder, self.target_size)
 
-    def process_image(self, img):
+    def run(self):
+        with self.output().temporary_path() as temp_output_path:
+            new_archive = h5py.File(temp_output_path)
+
+            original_archive = h5py.File(self.input().path)
+
+            for label in tqdm(original_archive.keys(), desc="Processing labels"):
+                group = new_archive.require_group(label)
+
+                for img in tqdm(original_archive[label].keys()):
+
+                    # create a subgroup so all molecules are organized correctly
+                    # new group
+                    img_group = group.create_group(img)
+
+                    original_img = original_archive[label][img].value
+                    augmented_images = self.make_augmented(original_img)
+
+                    for i, aug in enumerate(augmented_images):
+                        new_dset = img_group.create_dataset(
+                            img + "_aug_{}".format(i), data=aug
+                        )
+
+                        for key, val in original_archive[label][img].attrs.items():
+                            new_dset.attrs[key] = val
+
+            new_archive.close()
+            original_archive.close()
+
+    # produces
+    def make_augmented(self, img: np.array) -> List[np.array]:
 
         return [img] + [
             random_noise(img, mode="gaussian", clip=True)
-            for i in range(self.num_augment)
+            for _ in range(self.num_augment)
         ]
+
+    def output(self):
+        # append the rest of the parameter values
+
+        additional_params = [
+            param
+            for param, obj in self.get_params()
+            if param not in ["hdffolder", "imgfolder"]
+        ]
+
+        additional_param_vals = [
+            str(self.__getattribute__(param)) for param in additional_params
+        ]
+
+        return luigi.LocalTarget(
+            "{}/{}_{}_{}.h5".format(
+                self.hdffolder,
+                os.path.basename(self.imgfolder),
+                "augmented",
+                "_".join(additional_param_vals),
+            )
+        )
