@@ -8,7 +8,7 @@ dependencies:
   - pillow
   - keras
   - pip
-  - tensorflow==1.14
+  - tensorflow-gpu==1.14
   - tqdm
   - scikit-learn
   - opencv
