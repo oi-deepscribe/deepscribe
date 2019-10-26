@@ -151,14 +151,16 @@ class AssignDatasetTask(luigi.Task):
 
         # flatten arrays and expand dims
 
+        # repeat train and test labels
+
         np.savez(
             self.output().path,
             train_imgs=AssignDatasetTask.flatten_and_stack(train_imgs),
             test_imgs=AssignDatasetTask.flatten_and_stack(test_imgs),
             valid_imgs=AssignDatasetTask.flatten_and_stack(valid_imgs),
-            train_labels=train_labels,
-            test_labels=test_labels,
-            valid_labels=valid_labels,
+            train_labels=np.tile(train_labels, self.num_augment + 1),
+            test_labels=np.tile(test_labels, self.num_augment + 1),
+            valid_labels=np.tile(valid_labels, self.num_augment + 1),
             classes=enc.classes_,
         )
 
@@ -169,7 +171,7 @@ class AssignDatasetTask(luigi.Task):
 
         flattened_list = list(itertools.chain.from_iterable(lst))
         stacked = np.stack(flattened_list, axis=0)
-        stacked = np.expand_dims(stacked, axis=1)
+        stacked = np.expand_dims(stacked, axis=-1)
 
         return stacked
 

@@ -60,15 +60,8 @@ class TrainKerasModelFromDefinitionTask(luigi.Task):
 
         # converting to one-hot
 
-        # convert to correct tensor size
-
-        if len(data["train_imgs"].shape) < 4:
-            train_data = np.expand_dims(data["train_imgs"], axis=-1)
-        else:
-            train_data = data["train_imgs"]
-
         _, model = cnn_classifier(
-            train_data,
+            data["train_imgs"],
             kr.utils.to_categorical(data["train_labels"]),
             data["valid_imgs"],
             kr.utils.to_categorical(data["valid_labels"]),
