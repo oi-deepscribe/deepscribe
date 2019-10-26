@@ -7,8 +7,8 @@
 module load cuda/9.1
 
 #SIGNS='["na","HAL","iš","MEŠ"]'
-#SIGNS='["na","HAL"]'
-SIGNS='["na","HAL","iš","MEŠ","ma","1","du","da","AN","AŠ"]'
+SIGNS='["na","HAL"]'
+#SIGNS='["na","HAL","iš","MEŠ","ma","1","du","da","AN","AŠ"]'
 
 
 luigi --module deepscribe.luigi.training TrainKerasModelFromDefinitionTask --local-scheduler \
