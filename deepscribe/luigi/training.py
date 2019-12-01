@@ -5,7 +5,7 @@ import luigi
 import tensorflow.keras as kr
 import os
 from deepscribe.luigi.ml_input import AssignDatasetTask
-from deepscribe.models.baselines import cnn_classifier
+from deepscribe.models.baselines import cnn_classifier_2conv
 import numpy as np
 import json
 from pathlib import Path
@@ -33,6 +33,9 @@ class TrainKerasModelFromDefinitionTask(luigi.Task):
     fractions = luigi.ListParameter()  # train/valid/test fraction
     model_definition = luigi.Parameter()  # JSON file with model definition specs
     num_augment = luigi.IntParameter(default=0)
+    rest_as_other = luigi.BoolParameter(
+        default=False
+    )  # set the remaining as "other" - not recommended for small keep_category lengths
 
     def requires(self):
         return AssignDatasetTask(
@@ -42,6 +45,7 @@ class TrainKerasModelFromDefinitionTask(luigi.Task):
             self.keep_categories,
             self.fractions,
             self.num_augment,
+            self.rest_as_other,
         )
 
     def run(self):
@@ -60,7 +64,7 @@ class TrainKerasModelFromDefinitionTask(luigi.Task):
 
         # converting to one-hot
 
-        _, model = cnn_classifier(
+        _, model = cnn_classifier_2conv(
             data["train_imgs"],
             kr.utils.to_categorical(data["train_labels"]),
             data["valid_imgs"],
@@ -130,7 +134,7 @@ class RunTalosScanTask(luigi.Task):
             kr.utils.to_categorical(data["train_labels"]),
             x_val=data["valid_imgs"],
             y_val=kr.utils.to_categorical(data["valid_labels"]),
-            model=cnn_classifier,
+            model=cnn_classifier_2conv,
             params=talos_params,
             fraction_limit=self.subsample,
             experiment_name=p.stem,

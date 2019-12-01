@@ -91,6 +91,9 @@ class AssignDatasetTask(luigi.Task):
     keep_categories = luigi.ListParameter()
     fractions = luigi.ListParameter()  # train/valid/test fraction
     num_augment = luigi.IntParameter(default=0)
+    rest_as_other = luigi.BoolParameter(
+        default=False
+    )  # set the remaining as "other" - not recommended for small keep_category lengths
 
     def requires(self):
         return SubsampleDatasetTask(
@@ -99,11 +102,15 @@ class AssignDatasetTask(luigi.Task):
             self.target_size,
             self.keep_categories,
             self.num_augment,
+            self.rest_as_other,
         )
 
     def run(self):
 
-        # TODO : validate fractions
+        if sum(self.fractions) != 1.0:
+            raise ValueError(
+                f"Invalid split {self.fractions} passed to --fractions argument. Fractions should add up to 1."
+            )
 
         # loads all data into memory.
         # TODO: not this.

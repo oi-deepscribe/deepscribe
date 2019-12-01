@@ -38,7 +38,7 @@ def mlp_classifier(input_shape, hidden_layers, layer_size, num_classes):
     return model
 
 
-def cnn_classifier(x_train, y_train, x_val, y_val, params):
+def cnn_classifier_2conv(x_train, y_train, x_val, y_val, params):
     """Builds CNN classifier according to parameter dictionary.
 
     Parameters
