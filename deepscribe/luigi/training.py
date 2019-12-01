@@ -56,7 +56,11 @@ class TrainKerasModelFromDefinitionTask(luigi.Task):
 
         # update the params dict with number of classes
 
-        model_params["num_classes"] = len(self.keep_categories)
+        model_params["num_classes"] = (
+            len(self.keep_categories) + 1
+            if self.rest_as_other
+            else len(self.keep_categories)
+        )
 
         # load data
         #
