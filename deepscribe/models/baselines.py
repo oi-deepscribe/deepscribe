@@ -100,7 +100,7 @@ def cnn_classifier_2conv(x_train, y_train, x_val, y_val, params):
     model.compile(
         optimizer=params["optimizer"],
         loss="categorical_crossentropy",
-        metrics=["acc", kr.metrics.AUC()],
+        metrics=["acc", kr.metrics.AUC(), kr.metrics.TopKCategoricalAccuracy(k=5)],
     )
 
     # TODO: early stopping
