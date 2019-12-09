@@ -2,61 +2,27 @@
 
 import tensorflow as tf
 import tensorflow.keras as kr
+import wandb
+from wandb.keras import WandbCallback
+import numpy as np
+from typing import Dict, Tuple
 
 
-def mlp_classifier(input_shape, hidden_layers, layer_size, num_classes):
-    """Multi-layer perceptron model. Flattens images first.
+wandb.init(project="deepscribe")
 
-    Parameters
-    ----------
-    input_shape : tuple of integers
-        Input shape of model
-    hidden_layers : int
-        Number of hidden layers.
-    layer_size : int
-        Hidden layer size.
-    num_classes : int
-        number of output classes.
 
-    Returns
-    -------
-    kr.models.Sequential
-        Initialized model.
-
+def cnn_classifier_2conv(
+    x_train: np.array, y_train: np.array, x_val: np.array, y_val: np.array, params: Dict
+) -> Tuple[kr.callbacks.History, kr.models.Model]:
     """
 
-    model = kr.models.Sequential()
-    # flatten the input image
-    model.add(kr.layers.Flatten(input_shape=input_shape))
-
-    for _ in range(hidden_layers):
-        model.add(kr.layers.Dense(layer_size, activation="relu"))
-
-    # final layer
-    model.add(kr.layers.Dense(num_classes, activation="softmax"))
-
-    return model
-
-
-def cnn_classifier_2conv(x_train, y_train, x_val, y_val, params):
-    """Builds CNN classifier according to parameter dictionary.
-
-    Parameters
-    ----------
-    input_shape : tuple
-        Input image shape
-    num_classes : int
-        Number of output classes
-    params : type
-        Description of parameter `params`.
-
-    Returns
-    -------
-    type
-        Description of returned object.
-
+    :param x_train:
+    :param y_train:
+    :param x_val:
+    :param y_val:
+    :param params:
+    :return:
     """
-
     model = kr.models.Sequential()
     model.add(
         kr.layers.Conv2D(
@@ -110,6 +76,7 @@ def cnn_classifier_2conv(x_train, y_train, x_val, y_val, params):
         batch_size=params["batch_size"],
         epochs=params["epochs"],
         validation_data=(x_val, y_val),
+        callbacks=[WandbCallback()],
     )
 
     return history, model
