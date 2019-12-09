@@ -17,7 +17,7 @@ module load cuda/9.1
 SIGNS='["na","HAL","iš","MEŠ","ma","1","du","da","AN","AŠ","ka₄","kur","2","ba","ra","šá","be","20","3","SAL","ul","ITI","ia","KI","MIN","hu","man","QA","me","mi","ti","um","m°n","ha","10","taš","ak","ri","BAR","4","gal","pu","ku","ir","mar","ip","´","ki","an","5"]'
 
 
-luigi --module deepscribe.luigi.training TrainKerasModelFromDefinitionTask --local-scheduler \
+luigi --module deepscribe.luigi.training RunTalosScanTask --local-scheduler \
       --imgfolder data/ochre/a_pfa \
       --hdffolder data/processed/pfa_new \
       --modelsfolder models \
