@@ -23,7 +23,8 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import talos
 
-# kept separate
+# TODO: merge this model training class with the talos definitions class and scikit-learn definitions with an abstract
+# class
 class TrainKerasModelFromDefinitionTask(luigi.Task):
     imgfolder = luigi.Parameter()
     hdffolder = luigi.Parameter()
@@ -97,7 +98,11 @@ class RunTalosScanTask(luigi.Task):
     keep_categories = luigi.ListParameter()
     fractions = luigi.ListParameter()  # train/valid/test fraction
     talos_params = luigi.Parameter()  # JSON file with model definition specs
-    subsample = luigi.FloatParameter()
+    subsample = luigi.FloatParameter(default=1.0)
+    num_augment = luigi.IntParameter(default=0)
+    rest_as_other = luigi.BoolParameter(
+        default=False
+    )  # set the remaining as "other" - not recommended for small keep_category lengths
 
     def requires(self):
         return AssignDatasetTask(
@@ -106,6 +111,8 @@ class RunTalosScanTask(luigi.Task):
             self.target_size,
             self.keep_categories,
             self.fractions,
+            self.num_augment,
+            self.rest_as_other,
         )
 
     def run(self):
@@ -117,24 +124,22 @@ class RunTalosScanTask(luigi.Task):
             talos_params = json.load(modelf)
 
         # set the number of classes here
-        talos_params["num_classes"] = [len(self.keep_categories)]
 
         p = Path(self.talos_params)
 
         # load data
+        talos_params["num_classes"] = [
+            len(self.keep_categories) + 1
+            if self.rest_as_other
+            else len(self.keep_categories)
+        ]
+
+        # load data
+        #
         data = np.load(self.input().path)
 
-        # converting to one-hot
-
-        # convert to correct tensor size
-
-        if len(data["train_imgs"].shape) < 4:
-            train_data = np.expand_dims(data["train_imgs"], axis=-1)
-        else:
-            train_data = data["train_imgs"]
-
         scan_object = talos.Scan(
-            train_data,
+            data["train_imgs"],
             kr.utils.to_categorical(data["train_labels"]),
             x_val=data["valid_imgs"],
             y_val=kr.utils.to_categorical(data["valid_labels"]),
