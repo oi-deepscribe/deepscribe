@@ -3,7 +3,7 @@
 "conv1_stride": [2],
 "pool1_stride": [1],
 "pool1_size": [2],
-"dropout": [0.5, 0.6, 0.7, 0.8],
+"dropout": [0.7, 0.8],
 "conv2_kernels": [8, 16, 32, 64],
 "conv2_ksize":  [5],
 "conv2_stride": [1],
@@ -11,6 +11,6 @@
 "pool2_size": [3],
 "pool2_stride": [1],
 "dense_size": [128, 256, 512],
-"batch_size":  [32, 64, 128],
-"epochs": [64, 128, 256, 512],
+"batch_size":  [64, 128],
+"epochs": [256, 512],
 "optimizer": ["adam"]}
