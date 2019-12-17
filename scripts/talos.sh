@@ -23,6 +23,7 @@ luigi --module deepscribe.luigi.training RunTalosScanTask --local-scheduler \
       --modelsfolder models \
       --target-size 50 \
       --keep-categories $SIGNS  \
+      --nepochs 128 \
       --fractions '[0.7, 0.1, 0.2]' \
       --talos-params data/talos_params/varied_knums.json \
       --num-augment 0 \

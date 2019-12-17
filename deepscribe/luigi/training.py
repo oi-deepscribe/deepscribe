@@ -98,6 +98,7 @@ class RunTalosScanTask(luigi.Task):
     keep_categories = luigi.ListParameter()
     fractions = luigi.ListParameter()  # train/valid/test fraction
     talos_params = luigi.Parameter()  # JSON file with model definition specs
+    nepoch = luigi.IntParameter(default=64)
     subsample = luigi.FloatParameter(default=1.0)
     num_augment = luigi.IntParameter(default=0)
     rest_as_other = luigi.BoolParameter(
@@ -134,6 +135,9 @@ class RunTalosScanTask(luigi.Task):
             else len(self.keep_categories)
         ]
 
+        # adding the number of epochs as a command line argument
+        talos_params["epochs"] = [self.nepoch]
+
         # load data
         #
         data = np.load(self.input().path)
@@ -158,8 +162,8 @@ class RunTalosScanTask(luigi.Task):
         p = Path(self.talos_params)
 
         return luigi.LocalTarget(
-            "{}/talos/{}_talos_subsampled_{}.pkl".format(
-                self.modelsfolder, p.stem, self.subsample
+            "{}/talos/{}_talos_{}_epoch_subsampled_{}.pkl".format(
+                self.modelsfolder, p.stem, self.nepoch, self.subsample
             )
         )
 
