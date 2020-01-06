@@ -20,6 +20,10 @@ class TestModelTask(luigi.Task):
     keep_categories = luigi.ListParameter()
     fractions = luigi.ListParameter()  # train/valid/test fraction
     model_definition = luigi.Parameter()  # JSON file with model definition specs
+    num_augment = luigi.IntParameter(default=0)
+    rest_as_other = luigi.BoolParameter(
+        default=False
+    )  # set the remaining as "other" - not recommended for small keep_category lengths
 
     def requires(self):
         return {
@@ -31,6 +35,8 @@ class TestModelTask(luigi.Task):
                 self.keep_categories,
                 self.fractions,
                 self.model_definition,
+                self.num_augment,
+                self.rest_as_other,
             ),
             "dataset": AssignDatasetTask(
                 self.imgfolder,
@@ -38,6 +44,8 @@ class TestModelTask(luigi.Task):
                 self.target_size,
                 self.keep_categories,
                 self.fractions,
+                self.num_augment,
+                self.rest_as_other,
             ),
         }
 
@@ -100,12 +108,12 @@ class PlotConfusionMatrixTask(luigi.Task):
 
 
 # selects the best architecture for this task, saves it to a JSON w/result vals.
-class SelectBestArchitectureTask(luigi.Task):
-    imgfolder = luigi.Parameter()
-    hdffolder = luigi.Parameter()
-    modelsfolder = luigi.Parameter()
-    target_size = luigi.IntParameter()  # standardizing to square images
-    keep_categories = luigi.ListParameter()
-    fractions = luigi.ListParameter()  # train/valid/test fraction
-    talos_params = luigi.Parameter()  # JSON file with model definition specs
-    subsample = luigi.FloatParameter()
+# class SelectBestArchitectureTask(luigi.Task):
+#     imgfolder = luigi.Parameter()
+#     hdffolder = luigi.Parameter()
+#     modelsfolder = luigi.Parameter()
+#     target_size = luigi.IntParameter()  # standardizing to square images
+#     keep_categories = luigi.ListParameter()
+#     fractions = luigi.ListParameter()  # train/valid/test fraction
+#     talos_params = luigi.Parameter()  # JSON file with model definition specs
+#     subsample = luigi.FloatParameter()
