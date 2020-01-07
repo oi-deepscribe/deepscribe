@@ -2,13 +2,13 @@
 
 import tensorflow as tf
 import tensorflow.keras as kr
-import wandb
-from wandb.keras import WandbCallback
+# import wandb
+# from wandb.keras import WandbCallback
 import numpy as np
 from typing import Dict, Tuple
 
 
-wandb.init(project="deepscribe")
+# wandb.init(project="deepscribe")
 
 
 def cnn_classifier_2conv(
@@ -76,7 +76,7 @@ def cnn_classifier_2conv(
         batch_size=params["batch_size"],
         epochs=params["epochs"],
         validation_data=(x_val, y_val),
-        callbacks=[WandbCallback()],
+        # callbacks=[WandbCallback()],
     )
 
     return history, model
