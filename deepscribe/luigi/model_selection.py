@@ -57,8 +57,11 @@ class TestModelTask(luigi.Task):
 
         # make predictions on data
 
-        # TODO: determine format of model.predict
-        pred_labels = model.predict(data["test_imgs"])
+        # (batch_size, num_classes)
+        pred_logits = model.predict(data["test_imgs"])
+
+        # computing predicted labels
+        pred_labels = np.argmax(pred_logits, axis=1)
 
         # compute confusion matrix
 
