@@ -124,11 +124,12 @@ class PlotConfusionMatrixTask(luigi.Task):
         class_labels = data["classes"]
         fig = plt.figure()
         ax = fig.add_subplot(111)
-        plt.title("Confusion matrix from {}".format(self.input()["dataset"].path))
+        plt.title("Confusion matrix from \n {}".format(self.input()["dataset"].path))
         cax = ax.matshow(confusion)
         fig.colorbar(cax)
-        ax.set_xticklabels(class_labels)
-        ax.set_yticklabels(class_labels)
+        # appending extra tick label to make sure everything aligns properly
+        ax.set_xticklabels(class_labels[0] + class_labels)
+        ax.set_yticklabels(class_labels[0] + class_labels)
         plt.savefig(self.output().path)
 
     def output(self):
