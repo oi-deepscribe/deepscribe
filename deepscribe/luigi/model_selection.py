@@ -127,8 +127,8 @@ class PlotConfusionMatrixTask(luigi.Task):
         plt.title("Confusion matrix from {}".format(self.input()["dataset"].path))
         cax = ax.matshow(confusion)
         fig.colorbar(cax)
-        ax.set_xticklabels([u''] + class_labels)
-        ax.set_yticklabels([u''] + class_labels)
+        ax.set_xticklabels([u' '] + class_labels)
+        ax.set_yticklabels([u' '] + class_labels)
         plt.savefig(self.output().path)
 
     def output(self):
