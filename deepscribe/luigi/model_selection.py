@@ -133,7 +133,7 @@ class PlotConfusionMatrixTask(luigi.Task):
 
     def output(self):
         return luigi.LocalTarget(
-            "{}_confusion.png".format(os.path.splitext(self.input().path)[0])
+            "{}_confusion.png".format(os.path.splitext(self.input()["dataset"].path)[0])
         )
 
 
@@ -234,7 +234,7 @@ class PlotMisclassificationTopKTask(luigi.Task):
 
     def output(self):
         return luigi.LocalTarget(
-            "{}_test_misclassified.pdf".format(os.path.splitext(self.input().path)[0])
+            "{}_test_misclassified.pdf".format(os.path.splitext(self.input()["dataset"].path)[0])
         )
 
 
