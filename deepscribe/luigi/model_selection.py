@@ -100,9 +100,18 @@ class PlotConfusionMatrixTask(luigi.Task):
 
         confusion = np.load(self.input().path)
 
-        plt.figure()
+        # get labels from dataset
+
+        data = np.load(self.input()["dataset"].path)
+
+        class_labels = data["classes"]
+        fig = plt.figure()
+        ax = fig.subplots(111)
         plt.title("Confusion matrix from {}".format(self.input().path))
-        plt.matshow(confusion)
+        ax.matshow(confusion)
+        ax.colorbar()
+        ax.set_xticklabels([''] + class_labels)
+        ax.set_yticklabels([''] + class_labels)
         plt.savefig(self.output().path)
 
     def output(self):
@@ -164,7 +173,7 @@ class PlotMisclassificationTopKTask(luigi.Task):
 
         # get indices of datapoints that aren't in the top k
 
-        num_incorrect = np.sum(np.logical_not(in_top_k))
+        num_incorrect = int(np.sum(np.logical_not(in_top_k)))
 
         # (num_incorrect, img_size_x, img_size_y, img_depth)
         incorrect_top_5 = data["test_imgs"][np.logical_not(in_top_k), :, :, :]
