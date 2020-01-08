@@ -83,19 +83,25 @@ class PlotConfusionMatrixTask(luigi.Task):
     keep_categories = luigi.ListParameter()
     fractions = luigi.ListParameter()  # train/valid/test fraction
     model_definition = luigi.Parameter()  # JSON file with model definition specs
+    num_augment = luigi.IntParameter(default=0)
+    rest_as_other = luigi.BoolParameter(
+        default=False
+    )  # set the remaining as "other" - not recommended for small keep_category lengths
 
     def requires(self):
         return {
             "confusion_matrix": TestModelTask(
-            self.imgfolder,
-            self.hdffolder,
-            self.modelsfolder,
-            self.target_size,
-            self.keep_categories,
-            self.fractions,
-            self.model_definition,
+                self.imgfolder,
+                self.hdffolder,
+                self.modelsfolder,
+                self.target_size,
+                self.keep_categories,
+                self.fractions,
+                self.model_definition,
+                self.num_augment,
+                self.rest_as_other
         ),
-        "dataset": AssignDatasetTask(
+            "dataset": AssignDatasetTask(
                 self.imgfolder,
                 self.hdffolder,
                 self.target_size,
@@ -103,6 +109,8 @@ class PlotConfusionMatrixTask(luigi.Task):
                 self.fractions,
                 self.num_augment,
                 self.rest_as_other,
+                self.num_augment,
+                self.rest_as_other
             ),
         }
 
