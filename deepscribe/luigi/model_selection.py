@@ -85,7 +85,8 @@ class PlotConfusionMatrixTask(luigi.Task):
     model_definition = luigi.Parameter()  # JSON file with model definition specs
 
     def requires(self):
-        return TestModelTask(
+        return {
+            "confusion_matrix": TestModelTask(
             self.imgfolder,
             self.hdffolder,
             self.modelsfolder,
@@ -93,12 +94,22 @@ class PlotConfusionMatrixTask(luigi.Task):
             self.keep_categories,
             self.fractions,
             self.model_definition,
-        )
+        ),
+        "dataset": AssignDatasetTask(
+                self.imgfolder,
+                self.hdffolder,
+                self.target_size,
+                self.keep_categories,
+                self.fractions,
+                self.num_augment,
+                self.rest_as_other,
+            ),
+        }
 
     def run(self):
         # load matrix
 
-        confusion = np.load(self.input().path)
+        confusion = np.load(self.input()["confusion_matrix"].path)
 
         # get labels from dataset
 
