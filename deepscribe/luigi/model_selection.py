@@ -124,7 +124,7 @@ class PlotConfusionMatrixTask(luigi.Task):
         class_labels = data["classes"]
         fig = plt.figure()
         ax = fig.add_subplot(111)
-        plt.title("Confusion matrix from \n {}".format(self.input()["dataset"].path))
+        plt.title("Confusion matrix")
         cax = ax.matshow(confusion)
         fig.colorbar(cax)
 
