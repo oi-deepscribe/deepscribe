@@ -123,7 +123,7 @@ class PlotConfusionMatrixTask(luigi.Task):
 
         class_labels = data["classes"]
         fig = plt.figure()
-        ax = fig.subplots(111)
+        ax = fig.add_subplot(111)
         plt.title("Confusion matrix from {}".format(self.input()["dataset"].path))
         ax.matshow(confusion)
         ax.colorbar()
