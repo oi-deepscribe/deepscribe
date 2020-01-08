@@ -128,8 +128,8 @@ class PlotConfusionMatrixTask(luigi.Task):
         cax = ax.matshow(confusion)
         fig.colorbar(cax)
         # appending extra tick label to make sure everything aligns properly
-        ax.set_xticklabels(class_labels[0] + class_labels)
-        ax.set_yticklabels(class_labels[0] + class_labels)
+        ax.set_xticklabels(class_labels[:1] + class_labels)
+        ax.set_yticklabels(class_labels[:1] + class_labels)
         plt.savefig(self.output().path)
 
     def output(self):
