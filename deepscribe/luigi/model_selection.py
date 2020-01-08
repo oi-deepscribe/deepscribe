@@ -109,8 +109,6 @@ class PlotConfusionMatrixTask(luigi.Task):
                 self.fractions,
                 self.num_augment,
                 self.rest_as_other,
-                self.num_augment,
-                self.rest_as_other
             ),
         }
 
