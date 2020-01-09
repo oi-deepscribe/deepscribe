@@ -1,7 +1,7 @@
 import luigi
 from .training import TrainKerasModelFromDefinitionTask
 from .ml_input import AssignDatasetTask
-from sklearn.metrics import confusion_matrix
+from sklearn.metrics import confusion_matrix, classification_report
 import numpy as np
 import os
 import tensorflow.keras as kr
@@ -99,8 +99,8 @@ class PlotConfusionMatrixTask(luigi.Task):
                 self.fractions,
                 self.model_definition,
                 self.num_augment,
-                self.rest_as_other
-        ),
+                self.rest_as_other,
+            ),
             "dataset": AssignDatasetTask(
                 self.imgfolder,
                 self.hdffolder,
@@ -128,7 +128,6 @@ class PlotConfusionMatrixTask(luigi.Task):
         cax = ax.matshow(confusion)
         fig.colorbar(cax)
 
-
         # appending extra tick label to make sure everything aligns properly
         ax.set_xticklabels(list(class_labels[:1]) + list(class_labels))
         ax.set_yticklabels(list(class_labels[:1]) + list(class_labels))
@@ -137,6 +136,74 @@ class PlotConfusionMatrixTask(luigi.Task):
     def output(self):
         return luigi.LocalTarget(
             "{}_confusion.png".format(os.path.splitext(self.input()["dataset"].path)[0])
+        )
+
+
+class GenerateClassificationReportTask(luigi.Task):
+    imgfolder = luigi.Parameter()
+    hdffolder = luigi.Parameter()
+    modelsfolder = luigi.Parameter()
+    target_size = luigi.IntParameter()  # standardizing to square images
+    keep_categories = luigi.ListParameter()
+    fractions = luigi.ListParameter()  # train/valid/test fraction
+    model_definition = luigi.Parameter()  # JSON file with model definition specs
+    num_augment = luigi.IntParameter(default=0)
+    rest_as_other = luigi.BoolParameter(
+        default=False
+    )  # set the remaining as "other" - not recommended for small keep_category lengths
+
+    def requires(self):
+        return {
+            "model": TrainKerasModelFromDefinitionTask(
+                self.imgfolder,
+                self.hdffolder,
+                self.modelsfolder,
+                self.target_size,
+                self.keep_categories,
+                self.fractions,
+                self.model_definition,
+                self.num_augment,
+                self.rest_as_other,
+            ),
+            "dataset": AssignDatasetTask(
+                self.imgfolder,
+                self.hdffolder,
+                self.target_size,
+                self.keep_categories,
+                self.fractions,
+                self.num_augment,
+                self.rest_as_other,
+            ),
+        }
+
+    def run(self):
+        # load TF model and dataset
+        model = kr.models.load_model(self.input()["model"].path)
+        data = np.load(self.input()["dataset"].path)
+
+        # make predictions on data
+
+        # (batch_size, num_classes)
+        pred_logits = model.predict(data["test_imgs"])
+
+        # computing predicted labels
+        pred_labels = np.argmax(pred_logits, axis=1)
+
+        # compute confusion matrix
+
+        report = classification_report(
+            data["test_labels"], pred_labels, target_names=data["classes"]
+        )
+
+        with self.output().temporary_path() as temppath:
+            with open(temppath, "w") as outf:
+                outf.write(report)
+
+    def output(self):
+        return luigi.LocalTarget(
+            "{}_classification_report.txt".format(
+                os.path.splitext(self.input()["dataset"].path)[0]
+            )
         )
 
 
@@ -237,8 +304,52 @@ class PlotMisclassificationTopKTask(luigi.Task):
 
     def output(self):
         return luigi.LocalTarget(
-            "{}_test_misclassified.pdf".format(os.path.splitext(self.input()["dataset"].path)[0])
+            "{}_test_misclassified.pdf".format(
+                os.path.splitext(self.input()["dataset"].path)[0]
+            )
         )
+
+
+# runs the collection of analysis tasks on the
+class RunAnalysisOnTestDataTask(luigi.WrapperTask):
+    imgfolder = luigi.Parameter()
+    hdffolder = luigi.Parameter()
+    modelsfolder = luigi.Parameter()
+    target_size = luigi.IntParameter()  # standardizing to square images
+    keep_categories = luigi.ListParameter()
+    fractions = luigi.ListParameter()  # train/valid/test fraction
+    model_definition = luigi.Parameter()  # JSON file with model definition specs
+    num_augment = luigi.IntParameter(default=0)
+    rest_as_other = luigi.BoolParameter(
+        default=False
+    )  # set the remaining as "other" - not recommended for small keep_category lengths
+    k = luigi.IntParameter(default=5)
+
+    def requires(self):
+        return [
+            GenerateClassificationReportTask(
+                self.imgfolder,
+                self.hdffolder,
+                self.modelsfolder,
+                self.target_size,
+                self.keep_categories,
+                self.fractions,
+                self.model_definition,
+                self.num_augment,
+                self.rest_as_other,
+            ),
+            PlotConfusionMatrixTask(
+                self.imgfolder,
+                self.hdffolder,
+                self.modelsfolder,
+                self.target_size,
+                self.keep_categories,
+                self.fractions,
+                self.model_definition,
+                self.num_augment,
+                self.rest_as_other,
+            ),
+        ]
 
 
 # selects the best architecture for this task, saves it to a JSON w/result vals.

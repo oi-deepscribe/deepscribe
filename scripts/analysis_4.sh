@@ -16,7 +16,7 @@ SIGNS='["na","HAL","iš","MEŠ"]'
 #SIGNS='["na","HAL","iš","MEŠ","ma","1","du","da","AN","AŠ"]'
 
 
-luigi --module deepscribe.luigi.model_selection PlotConfusionMatrixTask --local-scheduler \
+luigi --module deepscribe.luigi.model_selection RunAnalysisOnTestDataTask --local-scheduler \
       --imgfolder data/ochre/a_pfa \
       --hdffolder ../deepscribe-data/processed/pfa_new \
       --modelsfolder models \
