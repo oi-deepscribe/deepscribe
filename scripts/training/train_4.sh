@@ -19,4 +19,3 @@ luigi --module deepscribe.luigi.training TrainKerasModelFromDefinitionTask --loc
       --keep-categories $SIGNS  \
       --fractions '[0.7, 0.1, 0.2]' \
       --model-definition data/model_defs/alexnet-small.json \
-      --num-augment 10
