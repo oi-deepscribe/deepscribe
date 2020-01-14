@@ -2,25 +2,32 @@
 
 import tensorflow as tf
 import tensorflow.keras as kr
-# import wandb
-# from wandb.keras import WandbCallback
+import wandb
+from wandb.keras import WandbCallback
 import numpy as np
 from typing import Dict, Tuple
 
 
-# wandb.init(project="deepscribe")
+wandb.init(project="deepscribe")
 
 
 def cnn_classifier_2conv(
-    x_train: np.array, y_train: np.array, x_val: np.array, y_val: np.array, params: Dict
+    x_train: np.array,
+    y_train: np.array,
+    x_val: np.array,
+    y_val: np.array,
+    params: Dict,
+    labels: list,
 ) -> Tuple[kr.callbacks.History, kr.models.Model]:
     """
+
 
     :param x_train:
     :param y_train:
     :param x_val:
     :param y_val:
     :param params:
+    :param labels:
     :return:
     """
     model = kr.models.Sequential()
@@ -76,7 +83,7 @@ def cnn_classifier_2conv(
         batch_size=params["batch_size"],
         epochs=params["epochs"],
         validation_data=(x_val, y_val),
-        # callbacks=[WandbCallback()],
+        callbacks=[WandbCallback(data_type="image", labels=labels)],
     )
 
     return history, model

@@ -75,6 +75,7 @@ class TrainKerasModelFromDefinitionTask(luigi.Task):
             data["valid_imgs"],
             kr.utils.to_categorical(data["valid_labels"]),
             model_params,
+            data["classes"],
         )
 
         # save model for serialization
@@ -147,7 +148,7 @@ class RunTalosScanTask(luigi.Task):
             kr.utils.to_categorical(data["train_labels"]),
             x_val=data["valid_imgs"],
             y_val=kr.utils.to_categorical(data["valid_labels"]),
-            model=cnn_classifier_2conv,
+            model=cnn_classifier_2conv,  # TODO: update this with new type signature
             params=talos_params,
             fraction_limit=self.subsample,
             experiment_name=p.stem,

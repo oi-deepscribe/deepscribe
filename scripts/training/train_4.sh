@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #SBATCH --partition=gpu2 # GPU2 partition
-#SBATCH --ntasks=1       # 1 CPU core to drive GPU
+#SBATCH --ntasks=2       # 1 CPU core to drive GPU
 #SBATCH --gres=gpu:1     # Request 1 GPU
 
 module load cuda/9.1
