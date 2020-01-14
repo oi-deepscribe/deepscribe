@@ -8,9 +8,6 @@ import numpy as np
 from typing import Dict, Tuple
 
 
-wandb.init(project="deepscribe")
-
-
 def cnn_classifier_2conv(
     x_train: np.array,
     y_train: np.array,
@@ -30,6 +27,8 @@ def cnn_classifier_2conv(
     :param labels:
     :return:
     """
+    wandb.init(project="deepscribe")
+
     model = kr.models.Sequential()
     model.add(
         kr.layers.Conv2D(
