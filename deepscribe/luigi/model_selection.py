@@ -349,6 +349,18 @@ class RunAnalysisOnTestDataTask(luigi.WrapperTask):
                 self.num_augment,
                 self.rest_as_other,
             ),
+            PlotMisclassificationTopKTask(
+                self.imgfolder,
+                self.hdffolder,
+                self.modelsfolder,
+                self.target_size,
+                self.keep_categories,
+                self.fractions,
+                self.model_definition,
+                self.num_augment,
+                self.rest_as_other,
+                self.k,
+            ),
         ]
 
 
