@@ -13,7 +13,7 @@ SIGNS='["na","HAL","iš","MEŠ"]'
 
 luigi --module deepscribe.luigi.training TrainKerasModelFromDefinitionTask --local-scheduler \
       --imgfolder data/ochre/a_pfa \
-      --hdffolder data/processed/pfa_new \
+      --hdffolder ../deepscribe-data/processed/pfa_new \
       --modelsfolder models \
       --target-size 50 \
       --keep-categories $SIGNS  \
