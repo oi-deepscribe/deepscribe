@@ -8,8 +8,8 @@ import tensorflow.keras as kr
 import tensorflow as tf
 import matplotlib
 
-matplotlib.use("cairo")
-import matplotlib.backends.backend_pdf
+matplotlib.use("Agg")
+# import matplotlib.backends.backend_pdf
 import matplotlib.pyplot as plt
 
 
@@ -247,6 +247,9 @@ class PlotMisclassificationTopKTask(luigi.Task):
         }
 
     def run(self):
+
+        os.mkdir(self.output().path)
+
         # load TF model and dataset
         model = kr.models.load_model(self.input()["model"].path)
         data = np.load(self.input()["dataset"].path)
@@ -278,30 +281,24 @@ class PlotMisclassificationTopKTask(luigi.Task):
         # (num_incorrect, num_classes)
         incorrect_logits = pred_logits[np.squeeze(np.logical_not(in_top_k_arr)), :]
 
-        with self.output().temporary_path() as temppath:
+        for i in range(num_incorrect):
+            img = incorrect_top_5[i, :, :, :]
+            ground_truth = data["classes"][incorrect_top_5_truth[i]]
+            top_k_predictions = np.argsort(incorrect_logits[i, :])[0 : self.k]
+            top_k_predicted_labels = data["classes"][top_k_predictions]
 
-            pdf = matplotlib.backends.backend_pdf.PdfPages(temppath)
+            fig = plt.figure()
+            plt.title(
+                f"Misclassified Image {i} - predicted {top_k_predicted_labels}, truth {ground_truth}"
+            )
+            plt.imshow(img)
 
-            for i in range(num_incorrect):
-                img = incorrect_top_5[i, :, :, :]
-                ground_truth = data["classes"][incorrect_top_5_truth[i]]
-                top_k_predictions = np.argsort(incorrect_logits[i, :])[0 : self.k]
-                top_k_predicted_labels = data["classes"][top_k_predictions]
-
-                fig = plt.figure()
-                plt.title(
-                    f"Misclassified Image {i} - predicted {top_k_predicted_labels}, truth {ground_truth}"
-                )
-                plt.imshow(img)
-
-                pdf.savefig(fig)
-                plt.close(fig)
-
-            pdf.close()
+            plt.savefig(f"{}/misclassified-{i}.png")
+            plt.close(fig)
 
     def output(self):
         return luigi.LocalTarget(
-            "{}_test_misclassified.pdf".format(
+            "{}_test_misclassified".format(
                 os.path.splitext(self.input()["dataset"].path)[0]
             )
         )
