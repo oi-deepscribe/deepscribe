@@ -293,7 +293,7 @@ class PlotMisclassificationTopKTask(luigi.Task):
             )
             plt.imshow(img)
 
-            plt.savefig(f"{}/misclassified-{i}.png")
+            plt.savefig(f"{self.output().path}/misclassified-{i}.png")
             plt.close(fig)
 
     def output(self):
