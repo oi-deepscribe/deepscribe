@@ -282,7 +282,7 @@ class PlotMisclassificationTopKTask(luigi.Task):
         incorrect_logits = pred_logits[np.squeeze(np.logical_not(in_top_k_arr)), :]
 
         for i in range(num_incorrect):
-            img = incorrect_top_5[i, :, :, :]
+            img = np.squeeze(incorrect_top_5[i, :, :])
             ground_truth = data["classes"][incorrect_top_5_truth[i]]
             top_k_predictions = np.argsort(incorrect_logits[i, :])[0 : self.k]
             top_k_predicted_labels = data["classes"][top_k_predictions]
