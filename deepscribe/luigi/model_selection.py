@@ -266,11 +266,11 @@ class PlotMisclassificationTopKTask(luigi.Task):
         num_incorrect = int(np.sum(np.logical_not(in_top_k_arr)))
 
         # (num_incorrect, img_size_x, img_size_y, img_depth)
-        incorrect_top_5 = data["test_imgs"][np.logical_not(in_top_k), :, :, :]
+        incorrect_top_5 = data["test_imgs"][np.logical_not(in_top_k_arr), :, :, :]
         # (num_incorrect,)
-        incorrect_top_5_truth = data["test_labels"][np.logical_not(in_top_k)]
+        incorrect_top_5_truth = data["test_labels"][np.logical_not(in_top_k_arr)]
         # (num_incorrect, num_classes)
-        incorrect_logits = pred_logits[np.logical_not(in_top_k), :]
+        incorrect_logits = pred_logits[np.logical_not(in_top_k_arr), :]
 
         with self.output().temporary_path() as temppath:
 
@@ -278,7 +278,7 @@ class PlotMisclassificationTopKTask(luigi.Task):
 
             for i in range(num_incorrect):
                 img = incorrect_top_5[i, :, :, :]
-                ground_truth = incorrect_top_5_truth[:]
+                ground_truth = data["classes"][incorrect_top_5_truth[i]]
                 top_k_predictions = np.argsort(incorrect_logits[i, :])[0 : self.k]
                 top_k_predicted_labels = data["classes"][top_k_predictions]
 
