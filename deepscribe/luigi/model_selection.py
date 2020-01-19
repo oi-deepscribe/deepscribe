@@ -266,7 +266,7 @@ class PlotMisclassificationTopKTask(luigi.Task):
         num_incorrect = int(np.sum(np.logical_not(in_top_k_arr)))
 
         # (num_incorrect, img_size_x, img_size_y, img_depth)
-        incorrect_top_5 = data["test_imgs"][np.logical_not(in_top_k_arr), :, :, :]
+        incorrect_top_5 = data["test_imgs"][np.logical_not(in_top_k_arr), :, :]
         # (num_incorrect,)
         incorrect_top_5_truth = data["test_labels"][np.logical_not(in_top_k_arr)]
         # (num_incorrect, num_classes)
