@@ -291,7 +291,7 @@ class PlotMisclassificationTopKTask(luigi.Task):
             plt.title(
                 f"Misclassified Image {i} - predicted {top_k_predicted_labels}, truth {ground_truth}"
             )
-            plt.imshow(img, cmap="gray", vmin=0, vmax=255)
+            plt.imshow(img, cmap="gray")
 
             plt.savefig(f"{self.output().path}/misclassified-{i}.png")
             plt.close(fig)
