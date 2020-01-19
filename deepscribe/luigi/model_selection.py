@@ -5,8 +5,9 @@ from sklearn.metrics import confusion_matrix, classification_report
 import numpy as np
 import os
 import tensorflow.keras as kr
+import tensorflow as tf
 import matplotlib
-from pylatex import Document, Section, Figure, NoEscape
+import matplotlib.backends.backend_pdf
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
@@ -258,9 +259,11 @@ class PlotMisclassificationTopKTask(luigi.Task):
         # (batch_size,)
         in_top_k = kr.backend.in_top_k(pred_logits, data["test_labels"], self.k)
 
+        in_top_k_arr = tf.Session().run([in_top_k])
+
         # get indices of datapoints that aren't in the top k
 
-        num_incorrect = int(np.sum(np.logical_not(in_top_k)))
+        num_incorrect = int(np.sum(np.logical_not(in_top_k_arr)))
 
         # (num_incorrect, img_size_x, img_size_y, img_depth)
         incorrect_top_5 = data["test_imgs"][np.logical_not(in_top_k), :, :, :]
@@ -271,36 +274,24 @@ class PlotMisclassificationTopKTask(luigi.Task):
 
         with self.output().temporary_path() as temppath:
 
-            doc = Document(temppath, geometry_options={"right": "2cm", "left": "2cm"})
+            pdf = matplotlib.backends.backend_pdf.PdfPages(temppath)
 
-            doc.append("Introduction.")
-
-            # TODO: more experiment data
-
-            # assemble image, ground truth label, top-5 predicted classes
             for i in range(num_incorrect):
                 img = incorrect_top_5[i, :, :, :]
                 ground_truth = incorrect_top_5_truth[:]
                 top_k_predictions = np.argsort(incorrect_logits[i, :])[0 : self.k]
                 top_k_predicted_labels = data["classes"][top_k_predictions]
 
-                with doc.create(Section(f"Misclassified Image {i}")):
-                    doc.append(f"Predicted: {top_k_predicted_labels}")
-                    fig = plt.figure()
-                    plt.imshow(img)
-                    with doc.create(Figure(position="htbp")) as plot:
-                        plot.add_plot()
-                        plot.add_caption(
-                            f"Correct Label:{data['classes'][ground_truth]}"
-                        )
+                fig = plt.figure()
+                plt.title(
+                    f"Misclassified Image {i} - predicted {top_k_predicted_labels}, truth {ground_truth}"
+                )
+                plt.imshow(img)
 
-                    doc.append("Created using matplotlib.")
+                pdf.savefig(fig)
+                plt.close(fig)
 
-                    fig.close()
-
-            doc.append("Conclusion.")
-
-            doc.generate_pdf(clean_tex=False)
+            pdf.close()
 
     def output(self):
         return luigi.LocalTarget(
