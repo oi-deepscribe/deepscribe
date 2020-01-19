@@ -7,9 +7,9 @@ import os
 import tensorflow.keras as kr
 import tensorflow as tf
 import matplotlib
-import matplotlib.backends.backend_pdf
 
-matplotlib.use("Agg")
+matplotlib.use("cairo")
+import matplotlib.backends.backend_pdf
 import matplotlib.pyplot as plt
 
 
