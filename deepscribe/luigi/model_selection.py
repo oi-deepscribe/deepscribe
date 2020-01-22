@@ -304,6 +304,84 @@ class PlotMisclassificationTopKTask(luigi.Task):
         )
 
 
+class PlotIncorrectTask(luigi.Task):
+    imgfolder = luigi.Parameter()
+    hdffolder = luigi.Parameter()
+    modelsfolder = luigi.Parameter()
+    target_size = luigi.IntParameter()  # standardizing to square images
+    keep_categories = luigi.ListParameter()
+    fractions = luigi.ListParameter()  # train/valid/test fraction
+    model_definition = luigi.Parameter()  # JSON file with model definition specs
+    num_augment = luigi.IntParameter(default=0)
+    rest_as_other = luigi.BoolParameter(
+        default=False
+    )  # set the remaining as "other" - not recommended for small keep_category lengths
+
+    def requires(self):
+        return {
+            "model": TrainKerasModelFromDefinitionTask(
+                self.imgfolder,
+                self.hdffolder,
+                self.modelsfolder,
+                self.target_size,
+                self.keep_categories,
+                self.fractions,
+                self.model_definition,
+                self.num_augment,
+                self.rest_as_other,
+            ),
+            "dataset": AssignDatasetTask(
+                self.imgfolder,
+                self.hdffolder,
+                self.target_size,
+                self.keep_categories,
+                self.fractions,
+                self.num_augment,
+                self.rest_as_other,
+            ),
+        }
+
+    def run(self):
+
+        os.mkdir(self.output().path)
+
+        # load TF model and dataset
+        model = kr.models.load_model(self.input()["model"].path)
+        data = np.load(self.input()["dataset"].path)
+
+        # make predictions on data
+
+        # (batch_size, num_classes)
+        pred_logits = model.predict(data["test_imgs"])
+
+        # (batch_size,)
+
+        pred_labels = np.argmax(pred_logits, axis=1)
+
+        incorrect_prediction = np.not_equal(data["test_labels"], pred_labels)
+
+        incorrect_indx = np.where(incorrect_prediction)
+
+        for i in incorrect_indx:
+            img = np.squeeze(data["test_imgs"][i, :, :])
+            ground_truth = data["classes"][data["test_labels"][i]]
+            pred_label = data["classes"][pred_labels[i]]
+
+            fig = plt.figure()
+            plt.title(
+                f"Misclassified Image Idx: {i} - predicted {pred_label}, truth {ground_truth}"
+            )
+            plt.imshow(img, cmap="gray")
+
+            plt.savefig(f"{self.output().path}/misclassified-{i}.png")
+            plt.close(fig)
+
+    def output(self):
+        return luigi.LocalTarget(
+            "{}_test_errors".format(os.path.splitext(self.input()["dataset"].path)[0])
+        )
+
+
 # runs the collection of analysis tasks on the
 class RunAnalysisOnTestDataTask(luigi.WrapperTask):
     imgfolder = luigi.Parameter()
@@ -343,7 +421,7 @@ class RunAnalysisOnTestDataTask(luigi.WrapperTask):
                 self.num_augment,
                 self.rest_as_other,
             ),
-            PlotMisclassificationTopKTask(
+            PlotIncorrectTask(
                 self.imgfolder,
                 self.hdffolder,
                 self.modelsfolder,
@@ -353,7 +431,6 @@ class RunAnalysisOnTestDataTask(luigi.WrapperTask):
                 self.model_definition,
                 self.num_augment,
                 self.rest_as_other,
-                self.k,
             ),
         ]
 
