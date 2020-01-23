@@ -304,6 +304,7 @@ class PlotMisclassificationTopKTask(luigi.Task):
         )
 
 
+# plots a random sample of 16 incorrect images from test..
 class PlotIncorrectTask(luigi.Task):
     imgfolder = luigi.Parameter()
     hdffolder = luigi.Parameter()
@@ -362,23 +363,29 @@ class PlotIncorrectTask(luigi.Task):
 
         incorrect_indx = np.where(incorrect_prediction)
 
-        for i in incorrect_indx:
-            img = np.squeeze(data["test_imgs"][i, :, :])
-            ground_truth = data["classes"][data["test_labels"][i]]
-            pred_label = data["classes"][pred_labels[i]]
+        f, axarr = plt.subplots(4, 4)
 
-            fig = plt.figure()
-            plt.title(
-                f"Misclassified Image Idx: {i} - predicted {pred_label}, truth {ground_truth}"
+        for i in range(16):
+
+            indx = incorrect_indx[i]
+
+            img = np.squeeze(data["test_imgs"][indx, :, :])
+            ground_truth = data["classes"][data["test_labels"][indx]]
+            pred_label = data["classes"][pred_labels[indx]]
+
+            ax = axarr[i]
+            ax.title(
+                f"Misclassified Image: predicted {pred_label}, truth {ground_truth}"
             )
-            plt.imshow(img, cmap="gray")
+            ax.imshow(img, cmap="gray")
 
-            plt.savefig(f"{self.output().path}/misclassified-{i}.png")
-            plt.close(fig)
+        plt.savefig(self.output().path)
 
     def output(self):
         return luigi.LocalTarget(
-            "{}_test_errors".format(os.path.splitext(self.input()["dataset"].path)[0])
+            "{}_test_errors.png".format(
+                os.path.splitext(self.input()["dataset"].path)[0]
+            )
         )
 
 
