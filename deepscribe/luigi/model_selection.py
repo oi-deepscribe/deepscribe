@@ -374,9 +374,7 @@ class PlotIncorrectTask(luigi.Task):
             pred_label = data["classes"][pred_labels[indx]]
 
             ax = axarr[i]
-            ax.title(
-                f"Misclassified Image: predicted {pred_label}, truth {ground_truth}"
-            )
+            ax.set_title(f"pred {pred_label}, truth {ground_truth}")
             ax.imshow(img, cmap="gray")
 
         plt.savefig(self.output().path)
