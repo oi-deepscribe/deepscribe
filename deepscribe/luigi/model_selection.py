@@ -363,7 +363,7 @@ class PlotIncorrectTask(luigi.Task):
 
         f, axarr = plt.subplots(4, 4)
 
-        for i in range(16):
+        for i, (ix, iy) in enumerate(np.ndindex(axarr.shape)):
 
             indx = incorrect_indx[i]
 
@@ -371,7 +371,7 @@ class PlotIncorrectTask(luigi.Task):
             ground_truth = data["classes"][data["test_labels"][indx]]
             pred_label = data["classes"][pred_labels[indx]]
 
-            ax = axarr[i]
+            ax = axarr[ix, iy]
             ax.set_title(f"pred {pred_label}, truth {ground_truth}")
             ax.imshow(img, cmap="gray")
 
