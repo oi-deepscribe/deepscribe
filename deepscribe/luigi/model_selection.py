@@ -357,15 +357,15 @@ class PlotIncorrectTask(luigi.Task):
 
         pred_labels = np.argmax(pred_logits, axis=1)
 
-        incorrect_prediction = np.not_equal(data["test_labels"], pred_labels)
-
-        incorrect_indx = np.where(incorrect_prediction)
+        incorrect_prediction_idx, = np.not_equal(
+            data["test_labels"], pred_labels
+        ).nonzero()
 
         f, axarr = plt.subplots(4, 4)
 
         for i, (ix, iy) in enumerate(np.ndindex(axarr.shape)):
 
-            indx = incorrect_indx[i]
+            indx = incorrect_prediction_idx[i]
             print(indx)
 
             img = np.squeeze(data["test_imgs"][indx, :, :])
