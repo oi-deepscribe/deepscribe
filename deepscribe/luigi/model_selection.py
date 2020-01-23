@@ -366,6 +366,7 @@ class PlotIncorrectTask(luigi.Task):
         for i, (ix, iy) in enumerate(np.ndindex(axarr.shape)):
 
             indx = incorrect_indx[i]
+            print(indx)
 
             img = np.squeeze(data["test_imgs"][indx, :, :])
 
