@@ -368,6 +368,8 @@ class PlotIncorrectTask(luigi.Task):
             indx = incorrect_indx[i]
 
             img = np.squeeze(data["test_imgs"][indx, :, :])
+
+            print(img.shape)
             ground_truth = data["classes"][data["test_labels"][indx]]
             pred_label = data["classes"][pred_labels[indx]]
 
