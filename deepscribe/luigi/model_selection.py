@@ -344,8 +344,6 @@ class PlotIncorrectTask(luigi.Task):
 
     def run(self):
 
-        os.mkdir(self.output().path)
-
         # load TF model and dataset
         model = kr.models.load_model(self.input()["model"].path)
         data = np.load(self.input()["dataset"].path)
