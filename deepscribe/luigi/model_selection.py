@@ -361,21 +361,17 @@ class PlotIncorrectTask(luigi.Task):
             data["test_labels"], pred_labels
         ).nonzero()
 
-        f, axarr = plt.subplots(4, 4)
+        f, axarr = plt.subplots(5, 5, figsize=(10, 10))
 
         for i, (ix, iy) in enumerate(np.ndindex(axarr.shape)):
 
             indx = incorrect_prediction_idx[i]
-            print(indx)
-
             img = np.squeeze(data["test_imgs"][indx, :, :])
-
-            print(img.shape)
             ground_truth = data["classes"][data["test_labels"][indx]]
             pred_label = data["classes"][pred_labels[indx]]
 
             ax = axarr[ix, iy]
-            ax.set_title(f"pred {pred_label}, truth {ground_truth}")
+            ax.set_title(f"{pred_label},  {ground_truth}")
             ax.imshow(img, cmap="gray")
 
         plt.savefig(self.output().path)
