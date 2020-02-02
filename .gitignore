@@ -5,12 +5,20 @@ __pycache__/
 
 #not committing ochre data
 data/ochre
+data/processed
 #misc
 output/*
 .DS_Store
-# *.npz
+# not committing
+*.npz
+
+login.sh
+
+.idea
 
 *.jpg
+
+*.h5
 
 #not committing tensorboard stuff
 logs/*

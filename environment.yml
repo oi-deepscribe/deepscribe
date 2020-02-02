@@ -1,14 +1,20 @@
 name: deepscribe
 channels:
+  - anaconda
   - conda-forge
 dependencies:
   - numpy
   - matplotlib
   - pillow
   - keras
-  - tensorflow
+  - pip
+  - tensorflow-gpu==1.14
   - tqdm
+  - scikit-image
+  - scikit-learn
   - opencv
   - h5py
+  - luigi
   - pip:
-    - xlsx2csv
+      - talos
+      - wandb

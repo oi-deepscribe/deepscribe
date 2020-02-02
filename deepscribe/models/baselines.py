@@ -1,76 +1,90 @@
-#baseline models for single-image classification.
+# baseline models for single-image classification.
 
 import tensorflow as tf
 import tensorflow.keras as kr
+import wandb
+from wandb.keras import WandbCallback
+import numpy as np
+from typing import Dict, Tuple
 
-def mlp_classifier(input_shape, hidden_layers, layer_size, num_classes):
-    """Multi-layer perceptron model. Flattens images first.
 
-    Parameters
-    ----------
-    input_shape : tuple of integers
-        Input shape of model
-    hidden_layers : int
-        Number of hidden layers.
-    layer_size : int
-        Hidden layer size.
-    num_classes : int
-        number of output classes.
-
-    Returns
-    -------
-    kr.models.Sequential
-        Initialized model.
-
-    """
-
-    model = kr.models.Sequential()
-    # flatten the input image
-    model.add(kr.layers.Flatten(input_shape=input_shape))
-
-    for _ in range(hidden_layers):
-        model.add(kr.layers.Dense(layer_size, activation='relu'))
-
-    # final layer
-    model.add(kr.layers.Dense(num_classes, activation='softmax'))
-
-    return model
-
-def cnn_classifier(input_shape, num_classes):
-    """Compiles two-layer CNN classifier with the provided input shape and number of classes.
-
-    Parameters
-    ----------
-    input_shape : tuple of integers
-        Input shape of model.
-    num_classes : int
-        Number of output classes.
-
-    Returns
-    -------
-    kr.models.Sequential
-        Initialized model.
-
+def cnn_classifier_2conv(
+    x_train: np.array,
+    y_train: np.array,
+    x_val: np.array,
+    y_val: np.array,
+    params: Dict,
+    labels: list,
+) -> Tuple[kr.callbacks.History, kr.models.Model]:
     """
 
 
+    :param x_train:
+    :param y_train:
+    :param x_val:
+    :param y_val:
+    :param params:
+    :param labels:
+    :return:
+    """
+    wandb.init(project="deepscribe")
 
     model = kr.models.Sequential()
-    model.add(kr.layers.Conv2D(32, kernel_size=(25, 25), strides=(1, 1),
-                     activation='relu',
-                     input_shape=input_shape))
-    model.add(kr.layers.MaxPooling2D(pool_size=(5, 5), strides=(2, 2)))
+    model.add(
+        kr.layers.Conv2D(
+            params["conv1_kernels"],
+            kernel_size=(params["conv1_ksize"], params["conv1_ksize"]),
+            strides=(params["conv1_stride"], params["conv1_stride"]),
+            activation=params["activation"],
+        )
+    )
+    model.add(
+        kr.layers.MaxPooling2D(
+            pool_size=(params["pool1_size"], params["pool1_size"]),
+            strides=(params["pool1_stride"], params["pool1_stride"]),
+        )
+    )
     model.add(kr.layers.BatchNormalization())
-    model.add(kr.layers.Dropout(0.5))
-    model.add(kr.layers.Conv2D(64, (15, 15), activation='relu'))
+    model.add(kr.layers.Dropout(params["dropout"]))
+    model.add(
+        kr.layers.Conv2D(
+            params["conv2_kernels"],
+            kernel_size=(params["conv2_ksize"], params["conv2_ksize"]),
+            strides=(params["conv2_stride"], params["conv2_stride"]),
+            activation=params["activation"],
+        )
+    )
     model.add(kr.layers.BatchNormalization())
-    # model.add(kr.layers.Dropout(0.5))
-    # model.add(kr.layers.Conv2D(128, (10, 10), activation='relu'))
-    model.add(kr.layers.MaxPooling2D(pool_size=(2, 2)))
-    model.add(kr.layers.Dropout(0.5))
+    model.add(
+        kr.layers.MaxPooling2D(
+            pool_size=(params["pool2_size"], params["pool2_size"]),
+            strides=(params["pool2_stride"], params["pool2_stride"]),
+        )
+    )
+
+    model.add(kr.layers.Dropout(params["dropout"]))
     model.add(kr.layers.Flatten())
-    model.add(kr.layers.Dense(512, activation='relu'))
+    model.add(kr.layers.Dense(params["dense_size"], activation=params["activation"]))
     # model.add(kr.layers.Dense(512, activation='relu'))
-    model.add(kr.layers.Dense(num_classes, activation='softmax'))
+    model.add(kr.layers.Dense(params["num_classes"], activation="softmax"))
 
-    return model
+    # TODO: set learning rate
+    model.compile(
+        optimizer=params["optimizer"],
+        loss="categorical_crossentropy",
+        metrics=["acc", kr.metrics.AUC(), kr.metrics.TopKCategoricalAccuracy(k=5)],
+    )
+
+    history = model.fit(
+        x_train,
+        y_train,
+        batch_size=params["batch_size"],
+        epochs=params["epochs"],
+        validation_data=(x_val, y_val),
+        callbacks=[
+            WandbCallback(data_type="image", labels=labels),
+            kr.callbacks.EarlyStopping(monitor="val_loss", patience=3),
+        ],
+    )
+
+    return history, model
