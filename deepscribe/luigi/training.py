@@ -82,12 +82,11 @@ class TrainKerasModelFromDefinitionTask(luigi.Task):
         model.save(self.output().path)
 
     def output(self):
-
         p = Path(self.model_definition)
         p_data = Path(self.input().path)
 
         return luigi.LocalTarget(
-            "{}/{}_{}_trained.h5".format(self.modelsfolder, p.stem, p_data.stem)
+            "{}/{}_{}/trained.h5".format(self.modelsfolder, p.stem, p_data.stem)
         )
 
 
@@ -192,6 +191,9 @@ class TrainSKLModelFromDefinitionTask(luigi.Task):
         raise NotImplementedError
 
     def run(self):
+
+        self.output().makedirs()
+
         data = np.load(self.input().path)
 
         input_x = data["train_imgs"]
@@ -268,7 +270,7 @@ class TrainSKLModelFromDefinitionTask(luigi.Task):
         p_data = Path(self.input().path)
 
         return luigi.LocalTarget(
-            "{}/{}_{}_trained.pkl".format(self.modelsfolder, p.stem, p_data.stem)
+            "{}/{}_{}/trained.pkl".format(self.modelsfolder, p.stem, p_data.stem)
         )
 
 

@@ -7,6 +7,7 @@ import os
 import tensorflow.keras as kr
 import tensorflow as tf
 import matplotlib
+from pathlib import Path
 
 matplotlib.use("Agg")
 # import matplotlib.backends.backend_pdf
@@ -71,8 +72,11 @@ class TestModelTask(luigi.Task):
         np.save(self.output().path, confusion)
 
     def output(self):
+        p = Path(self.model_definition)
+        p_data = Path(self.input().path)
+
         return luigi.LocalTarget(
-            "{}_confusion.npy".format(os.path.splitext(self.input()["dataset"].path)[0])
+            "{}/{}_{}/test_confusion.npy".format(self.modelsfolder, p.stem, p_data.stem)
         )
 
 
@@ -135,8 +139,13 @@ class PlotConfusionMatrixTask(luigi.Task):
         plt.savefig(self.output().path)
 
     def output(self):
+        p = Path(self.model_definition)
+        p_data = Path(self.input().path)
+
         return luigi.LocalTarget(
-            "{}_confusion.png".format(os.path.splitext(self.input()["dataset"].path)[0])
+            "{}/{}_{}/confustion_test.png".format(
+                self.modelsfolder, p.stem, p_data.stem
+            )
         )
 
 
@@ -201,9 +210,12 @@ class GenerateClassificationReportTask(luigi.Task):
                 outf.write(report)
 
     def output(self):
+        p = Path(self.model_definition)
+        p_data = Path(self.input().path)
+
         return luigi.LocalTarget(
-            "{}_classification_report.txt".format(
-                os.path.splitext(self.input()["dataset"].path)[0]
+            "{}/{}_{}/classification_report.txt".format(
+                self.modelsfolder, p.stem, p_data.stem
             )
         )
 
@@ -297,10 +309,11 @@ class PlotMisclassificationTopKTask(luigi.Task):
             plt.close(fig)
 
     def output(self):
+        p = Path(self.model_definition)
+        p_data = Path(self.input().path)
+
         return luigi.LocalTarget(
-            "{}_test_misclassified".format(
-                os.path.splitext(self.input()["dataset"].path)[0]
-            )
+            "{}/{}_{}/test_misclassified".format(self.modelsfolder, p.stem, p_data.stem)
         )
 
 
@@ -377,9 +390,12 @@ class PlotIncorrectTask(luigi.Task):
         plt.savefig(self.output().path)
 
     def output(self):
+        p = Path(self.model_definition)
+        p_data = Path(self.input().path)
+
         return luigi.LocalTarget(
-            "{}_test_errors.png".format(
-                os.path.splitext(self.input()["dataset"].path)[0]
+            "{}/{}_{}/test_misclassified_sample.png".format(
+                self.modelsfolder, p.stem, p_data.stem
             )
         )
 
@@ -435,15 +451,3 @@ class RunAnalysisOnTestDataTask(luigi.WrapperTask):
                 self.rest_as_other,
             ),
         ]
-
-
-# selects the best architecture for this task, saves it to a JSON w/result vals.
-# class SelectBestArchitectureTask(luigi.Task):
-#     imgfolder = luigi.Parameter()
-#     hdffolder = luigi.Parameter()
-#     modelsfolder = luigi.Parameter()
-#     target_size = luigi.IntParameter()  # standardizing to square images
-#     keep_categories = luigi.ListParameter()
-#     fractions = luigi.ListParameter()  # train/valid/test fraction
-#     talos_params = luigi.Parameter()  # JSON file with model definition specs
-#     subsample = luigi.FloatParameter()
