@@ -75,7 +75,6 @@ def cnn_classifier_2conv(
         metrics=["acc", kr.metrics.AUC(), kr.metrics.TopKCategoricalAccuracy(k=5)],
     )
 
-    # TODO: early stopping
     history = model.fit(
         x_train,
         y_train,
