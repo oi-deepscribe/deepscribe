@@ -18,4 +18,4 @@ luigi --module deepscribe.luigi.training TrainKerasModelFromDefinitionTask --loc
       --target-size 50 \
       --keep-categories $SIGNS  \
       --fractions '[0.7, 0.1, 0.2]' \
-      --model-definition data/model_defs/alexnet-small.json \
+      --model-definition data/model_defs/alexnet-small.json
