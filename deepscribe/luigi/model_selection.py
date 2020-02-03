@@ -73,7 +73,7 @@ class TestModelTask(luigi.Task):
 
     def output(self):
         p = Path(self.model_definition)
-        p_data = Path(self.input().path)
+        p_data = Path(self.input()["dataset"].path)
 
         return luigi.LocalTarget(
             "{}/{}_{}/test_confusion.npy".format(self.modelsfolder, p.stem, p_data.stem)
@@ -140,7 +140,7 @@ class PlotConfusionMatrixTask(luigi.Task):
 
     def output(self):
         p = Path(self.model_definition)
-        p_data = Path(self.input().path)
+        p_data = Path(self.input()["dataset"].path)
 
         return luigi.LocalTarget(
             "{}/{}_{}/confustion_test.png".format(
@@ -211,7 +211,7 @@ class GenerateClassificationReportTask(luigi.Task):
 
     def output(self):
         p = Path(self.model_definition)
-        p_data = Path(self.input().path)
+        p_data = Path(self.input()["dataset"].path)
 
         return luigi.LocalTarget(
             "{}/{}_{}/classification_report.txt".format(
@@ -310,7 +310,7 @@ class PlotMisclassificationTopKTask(luigi.Task):
 
     def output(self):
         p = Path(self.model_definition)
-        p_data = Path(self.input().path)
+        p_data = Path(self.input()["dataset"].path)
 
         return luigi.LocalTarget(
             "{}/{}_{}/test_misclassified".format(self.modelsfolder, p.stem, p_data.stem)
@@ -391,7 +391,7 @@ class PlotIncorrectTask(luigi.Task):
 
     def output(self):
         p = Path(self.model_definition)
-        p_data = Path(self.input().path)
+        p_data = Path(self.input()["dataset"].path)
 
         return luigi.LocalTarget(
             "{}/{}_{}/test_misclassified_sample.png".format(
