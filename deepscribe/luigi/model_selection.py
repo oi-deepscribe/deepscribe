@@ -384,7 +384,9 @@ class PlotIncorrectTask(luigi.Task):
             pred_label = data["classes"][pred_labels[indx]]
 
             ax = axarr[ix, iy]
-            ax.set_title(f"{pred_label},  {ground_truth}")
+            ax.axes.get_xaxis().set_visible(False)
+            ax.axes.get_yaxis().set_visible(False)
+            ax.set_title(f"P: {pred_label},  T:{ground_truth}")
             ax.imshow(img, cmap="gray")
 
         plt.savefig(self.output().path)
