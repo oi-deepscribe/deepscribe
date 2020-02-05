@@ -51,6 +51,8 @@ class TrainKerasModelFromDefinitionTask(luigi.Task):
 
     def run(self):
 
+        self.output().makedirs()
+
         # load model definition
         with open(self.model_definition, "r") as modelf:
             model_params = json.load(modelf)
