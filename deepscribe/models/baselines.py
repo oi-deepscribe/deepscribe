@@ -75,18 +75,18 @@ def cnn_classifier_2conv(
         metrics=["acc", kr.metrics.AUC(), kr.metrics.TopKCategoricalAccuracy(k=5)],
     )
 
-    with wandb.init(project="deepscribe", dir=tempfile.mkdtemp()) as run:
+    # with wandb.init(project="deepscribe", dir=tempfile.mkdtemp()) as run:
 
-        history = model.fit(
-            x_train,
-            y_train,
-            batch_size=params["batch_size"],
-            epochs=params["epochs"],
-            validation_data=(x_val, y_val),
-            callbacks=[
-                WandbCallback(data_type="image", labels=labels),
-                kr.callbacks.EarlyStopping(monitor="val_loss", patience=3),
-            ],
-        )
+    history = model.fit(
+        x_train,
+        y_train,
+        batch_size=params["batch_size"],
+        epochs=params["epochs"],
+        validation_data=(x_val, y_val),
+        callbacks=[
+            # WandbCallback(data_type="image", labels=labels),
+            kr.callbacks.EarlyStopping(monitor="val_loss", patience=3)
+        ],
+    )
 
     return history, model
