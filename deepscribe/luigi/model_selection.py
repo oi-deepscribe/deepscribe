@@ -133,9 +133,11 @@ class PlotConfusionMatrixTask(luigi.Task):
         cax = ax.matshow(confusion)
         fig.colorbar(cax)
 
+        ax.set_xticks(list(range(len(class_labels) + 1)))
+        ax.set_yticks(list(range(len(class_labels) + 1)))
         # appending extra tick label to make sure everything aligns properly
-        ax.set_xticklabels(list(class_labels[:1]) + list(class_labels))
-        ax.set_yticklabels(list(class_labels[:1]) + list(class_labels))
+        ax.set_xticklabels([""] + list(class_labels))
+        ax.set_yticklabels([""] + list(class_labels))
         plt.savefig(self.output().path)
 
     def output(self):
