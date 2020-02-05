@@ -6,6 +6,7 @@ import wandb
 from wandb.keras import WandbCallback
 import numpy as np
 from typing import Dict, Tuple
+import tempfile
 
 
 def cnn_classifier_2conv(
@@ -74,7 +75,7 @@ def cnn_classifier_2conv(
         metrics=["acc", kr.metrics.AUC(), kr.metrics.TopKCategoricalAccuracy(k=5)],
     )
 
-    with wandb.init(project="deepscribe") as run:
+    with wandb.init(project="deepscribe", dir=tempfile.mkdtemp()) as run:
 
         history = model.fit(
             x_train,
