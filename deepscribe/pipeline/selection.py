@@ -5,7 +5,7 @@ import os
 from tqdm import tqdm
 import cv2
 import h5py
-from deepscribe.luigi.image_processing import AddGaussianNoiseTask
+from deepscribe.pipeline.images import AddGaussianNoiseTask
 from sklearn.preprocessing import LabelEncoder
 from sklearn.model_selection import train_test_split
 import numpy as np
@@ -22,6 +22,7 @@ class SubsampleDatasetTask(luigi.Task):
     hdffolder = luigi.Parameter()
     target_size = luigi.IntParameter()  # standardizing to square images
     keep_categories = luigi.ListParameter()
+    sigma = luigi.FloatParameter(default=0.5)
     num_augment = luigi.IntParameter()
     rest_as_other = luigi.BoolParameter(
         default=False
@@ -29,7 +30,11 @@ class SubsampleDatasetTask(luigi.Task):
 
     def requires(self):
         return AddGaussianNoiseTask(
-            self.imgfolder, self.hdffolder, self.target_size, self.num_augment
+            self.imgfolder,
+            self.hdffolder,
+            self.target_size,
+            self.sigma,
+            self.num_augment,
         )
 
     def run(self):
@@ -68,11 +73,12 @@ class SubsampleDatasetTask(luigi.Task):
 
     def output(self):
         return luigi.LocalTarget(
-            "{}/{}_{}_{}_aug_{}{}.h5".format(
+            "{}/{}_{}_{}_{}_aug_{}{}.h5".format(
                 self.hdffolder,
                 os.path.basename(self.imgfolder),
                 self.target_size,
                 "_".join([str(cat) for cat in self.keep_categories]),
+                self.sigma,
                 self.num_augment,
                 "_OTHER" if self.rest_as_other else "",
             )

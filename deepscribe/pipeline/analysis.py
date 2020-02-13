@@ -1,6 +1,6 @@
 import luigi
 from .training import TrainKerasModelFromDefinitionTask
-from .ml_input import AssignDatasetTask
+from .selection import AssignDatasetTask
 from sklearn.metrics import confusion_matrix, classification_report
 import numpy as np
 import os

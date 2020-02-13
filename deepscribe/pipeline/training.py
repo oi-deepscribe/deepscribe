@@ -4,7 +4,7 @@
 import luigi
 import tensorflow.keras as kr
 import os
-from deepscribe.luigi.ml_input import AssignDatasetTask
+from deepscribe.pipeline.selection import AssignDatasetTask
 from deepscribe.models.baselines import cnn_classifier_2conv
 import numpy as np
 import json

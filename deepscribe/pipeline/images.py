@@ -5,9 +5,10 @@ import luigi
 import os
 import h5py
 from tqdm import tqdm
-from deepscribe.luigi.preprocessing import OchreToHD5Task
+from deepscribe.pipeline.aggregation import OchreToHD5Task
 from sklearn.preprocessing import StandardScaler
 from skimage.util import random_noise
+from scipy.ndimage import gaussian_filter
 import numpy as np
 from typing import List
 
@@ -146,6 +147,23 @@ class RescaleImageValuesTask(ProcessImageTask):
         return StandardScaler().fit_transform(img)
 
 
+class GaussianBlurTask(ProcessImageTask):
+    # location of image folder
+    imgfolder = luigi.Parameter()
+    hdffolder = luigi.Parameter()
+    target_size = luigi.IntParameter()  # standardizing to square images
+    sigma = luigi.FloatParameter(default=0.5)
+    identifier = "blurred"
+
+    def requires(self):
+        return StandardizeImageSizeTask(
+            self.imgfolder, self.hdffolder, self.target_size
+        )
+
+    def process_image(self, img):
+        return gaussian_filter(img, sigma=self.sigma)
+
+
 # change task design - require creating subgroup for each label
 # to ensure that all labels are assigned properly in the next step.
 class AddGaussianNoiseTask(luigi.Task):
@@ -153,10 +171,13 @@ class AddGaussianNoiseTask(luigi.Task):
     imgfolder = luigi.Parameter()
     hdffolder = luigi.Parameter()
     target_size = luigi.IntParameter()  # standardizing to square images
+    sigma = luigi.FloatParameter(default=0.5)
     num_augment = luigi.IntParameter()
 
     def requires(self):
-        return RescaleImageValuesTask(self.imgfolder, self.hdffolder, self.target_size)
+        return GaussianBlurTask(
+            self.imgfolder, self.hdffolder, self.target_size, self.sigma
+        )
 
     def run(self):
         with self.output().temporary_path() as temp_output_path:

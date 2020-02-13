@@ -36,7 +36,7 @@ The majority of the `deepscribe` code base consists of Luigi workflow tasks sele
 - `RunTalosScanTask`: Reads a JSON file containing ranges of architecture parameters, runs a scan with Talos. 
 - `TrainSKLModelFromDefinitionTask`: Reads a JSON file containing scikit-learn model parameters, trains model. 
 
-## `deepscribe.luigi.model_selection`
+## `deepscribe.luigi.analysis`
 - `TestModelTask`: Evaluates trained model on test data, saves confusion matrix to npz archive.
 - `PlotConfusionMatrixTask`: Plots confusion matrix. 
 - `GenerateClassificationReportTask`: Generates a classification report using `sklearn`. 
