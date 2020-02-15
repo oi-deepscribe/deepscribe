@@ -101,7 +101,7 @@ class SelectDatasetTask(luigi.Task):
 
         # repeat train and test labels
 
-        np.savez(
+        np.savez_compressed(
             self.output().path,
             train_imgs=SelectDatasetTask.flatten_and_stack(train_imgs),
             test_imgs=SelectDatasetTask.flatten_and_stack(test_imgs),
