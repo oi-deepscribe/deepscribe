@@ -3,7 +3,6 @@
 import luigi
 import os
 from tqdm import tqdm
-import cv2
 import h5py
 from deepscribe.pipeline.images import AddGaussianNoiseTask
 from sklearn.preprocessing import LabelEncoder
@@ -13,17 +12,21 @@ import itertools
 from typing import List
 
 
-class SubsampleDatasetTask(luigi.Task):
+class SelectDatasetTask(luigi.Task):
     """
-    Selecting classes from larger dataset
+    Selecting classes from larger dataset.
+    Assigns data to the train/validation/test sets.
+    Returns .npz file with the different
+    categories.
     """
 
     imgfolder = luigi.Parameter()
     hdffolder = luigi.Parameter()
     target_size = luigi.IntParameter()  # standardizing to square images
     keep_categories = luigi.ListParameter()
+    fractions = luigi.ListParameter()  # train/valid/test fraction
+    num_augment = luigi.IntParameter(default=0)
     sigma = luigi.FloatParameter(default=0.5)
-    num_augment = luigi.IntParameter()
     rest_as_other = luigi.BoolParameter(
         default=False
     )  # set the remaining as "other" - not recommended for small keep_category lengths
@@ -38,80 +41,6 @@ class SubsampleDatasetTask(luigi.Task):
         )
 
     def run(self):
-        with self.output().temporary_path() as temp_output_path:
-            new_archive = h5py.File(temp_output_path)
-
-            original_archive = h5py.File(self.input().path)
-
-            for label in tqdm(original_archive.keys(), desc="Processing labels"):
-
-                if label in self.keep_categories:
-                    group = new_archive.require_group(label)
-                elif self.rest_as_other:
-                    group = new_archive.require_group("OTHER")
-                else:
-                    continue  # don't do anything
-
-                # copy all elements to the group
-                for img_group in tqdm(original_archive[label].keys()):
-                    # create new subgroups so augmented images stay in the same place
-                    new_img_group = group.create_group(img_group)
-
-                    for img in original_archive[label][img_group].keys():
-
-                        npy_img = original_archive[label][img_group][img].value
-                        new_dset = new_img_group.create_dataset(img, data=npy_img)
-
-                        # copy all keys in attributes
-                        for key, val in original_archive[label][img_group][
-                            img
-                        ].attrs.items():
-                            new_dset.attrs[key] = val
-
-            new_archive.close()
-            original_archive.close()
-
-    def output(self):
-        return luigi.LocalTarget(
-            "{}/{}_{}_{}_{}_aug_{}{}.h5".format(
-                self.hdffolder,
-                os.path.basename(self.imgfolder),
-                self.target_size,
-                "_".join([str(cat) for cat in self.keep_categories]),
-                self.sigma,
-                self.num_augment,
-                "_OTHER" if self.rest_as_other else "",
-            )
-        )
-
-
-class AssignDatasetTask(luigi.Task):
-    """
-    Assigns data to the train/validation/test sets. Returns .npz file with the different
-    categories.
-    """
-
-    imgfolder = luigi.Parameter()
-    hdffolder = luigi.Parameter()
-    target_size = luigi.IntParameter()  # standardizing to square images
-    keep_categories = luigi.ListParameter()
-    fractions = luigi.ListParameter()  # train/valid/test fraction
-    num_augment = luigi.IntParameter(default=0)
-    rest_as_other = luigi.BoolParameter(
-        default=False
-    )  # set the remaining as "other" - not recommended for small keep_category lengths
-
-    def requires(self):
-        return SubsampleDatasetTask(
-            self.imgfolder,
-            self.hdffolder,
-            self.target_size,
-            self.keep_categories,
-            self.num_augment,
-            self.rest_as_other,
-        )
-
-    def run(self):
 
         if sum(self.fractions) != 1.0:
             raise ValueError(
@@ -119,30 +48,36 @@ class AssignDatasetTask(luigi.Task):
             )
 
         # loads all data into memory.
-        # TODO: not this.
+        # TODO: not this. Maybe instead of creating the NPY archive we should stream from the HDF archive?
+        # Convert to TF Data workflow?
 
         data_archive = h5py.File(self.input().path)
 
         images = []
         labels = []
 
-        for label in data_archive.keys():
+        original_archive = h5py.File(self.input().path)
+
+        for label in tqdm(original_archive.keys(), desc="Selecting labels"):
 
             for img_group in data_archive[label].keys():
 
-                # keep all images in the same group together
+                if label in self.keep_categories or self.rest_as_other:
 
-                all_group = [
-                    np.array(data_archive[label][img_group][img].value)
-                    for img in data_archive[label][img_group].keys()
-                ]
+                    all_group_imgs = [
+                        np.array(data_archive[label][img_group][img].value)
+                        for img in data_archive[label][img_group].keys()
+                    ]
+                    # appending as a group to keep augmented images of the same class together.
+                    images.append(all_group_imgs)
 
-                images.append(all_group)
-                labels.append(label)
+                    if label in self.keep_categories:
+                        labels.append(label)
+                    elif self.rest_as_other:
+                        images.append("OTHER")
 
         data_archive.close()
         # create categorical labels
-
         enc = LabelEncoder()
 
         categorical_labels = enc.fit_transform(labels)
@@ -168,9 +103,9 @@ class AssignDatasetTask(luigi.Task):
 
         np.savez(
             self.output().path,
-            train_imgs=AssignDatasetTask.flatten_and_stack(train_imgs),
-            test_imgs=AssignDatasetTask.flatten_and_stack(test_imgs),
-            valid_imgs=AssignDatasetTask.flatten_and_stack(valid_imgs),
+            train_imgs=SelectDatasetTask.flatten_and_stack(train_imgs),
+            test_imgs=SelectDatasetTask.flatten_and_stack(test_imgs),
+            valid_imgs=SelectDatasetTask.flatten_and_stack(valid_imgs),
             train_labels=np.tile(train_labels, self.num_augment + 1),
             test_labels=np.tile(test_labels, self.num_augment + 1),
             valid_labels=np.tile(valid_labels, self.num_augment + 1),
@@ -190,5 +125,13 @@ class AssignDatasetTask(luigi.Task):
 
     def output(self):
         return luigi.LocalTarget(
-            "{}_split.npz".format(os.path.splitext(self.input().path)[0])
+            "{}/{}_{}_{}_{}_aug_{}{}.npz".format(
+                self.hdffolder,
+                os.path.basename(self.imgfolder),
+                self.target_size,
+                "_".join([str(cat) for cat in self.keep_categories]),
+                self.sigma,
+                self.num_augment,
+                "_OTHER" if self.rest_as_other else "",
+            )
         )
