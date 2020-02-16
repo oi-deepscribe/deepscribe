@@ -156,9 +156,7 @@ class GaussianBlurTask(ProcessImageTask):
     identifier = "blurred"
 
     def requires(self):
-        return StandardizeImageSizeTask(
-            self.imgfolder, self.hdffolder, self.target_size
-        )
+        return RescaleImageValuesTask(self.imgfolder, self.hdffolder, self.target_size)
 
     def process_image(self, img):
         return gaussian_filter(img, sigma=self.sigma)
@@ -166,6 +164,7 @@ class GaussianBlurTask(ProcessImageTask):
 
 # change task design - require creating subgroup for each label
 # to ensure that all labels are assigned properly in the next step.
+# NOTE: no longer used. data augmentation is performed at training time using TensorFlow.
 class AddGaussianNoiseTask(luigi.Task):
     # location of image folder
     imgfolder = luigi.Parameter()

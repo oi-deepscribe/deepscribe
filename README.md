@@ -38,8 +38,7 @@ The majority of the `deepscribe` code base consists of Luigi workflow tasks sele
 - `TrainSKLModelFromDefinitionTask`: Reads a JSON file containing scikit-learn model parameters, trains model. 
 
 ## `deepscribe.pipeline.analysis`
-- `TestModelTask`: Evaluates trained model on test data, saves confusion matrix to npz archive.
-- `PlotConfusionMatrixTask`: Plots confusion matrix. 
+- `PlotConfusionMatrixTask`: Evaluates trained model on test data, plots confusion matrix. 
 - `GenerateClassificationReportTask`: Generates a classification report using `sklearn`. 
 - `PlotIncorrectTask`: Generates a sample of incorrectly classified images with their true labels for model analysis. 
 - `RunAnalysisOnTestDataTask`: Wrapper task performing the previous model selection tasks. 

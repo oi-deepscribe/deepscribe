@@ -28,7 +28,6 @@ class TrainKerasModelFromDefinitionTask(luigi.Task):
     keep_categories = luigi.ListParameter()
     fractions = luigi.ListParameter()  # train/valid/test fraction
     model_definition = luigi.Parameter()  # JSON file with model definition specs
-    num_augment = luigi.IntParameter(default=0)
     sigma = luigi.FloatParameter(default=0.5)
     rest_as_other = luigi.BoolParameter(
         default=False
@@ -41,7 +40,6 @@ class TrainKerasModelFromDefinitionTask(luigi.Task):
             self.target_size,
             self.keep_categories,
             self.fractions,
-            self.num_augment,
             self.sigma,
             self.rest_as_other,
         )
@@ -70,11 +68,10 @@ class TrainKerasModelFromDefinitionTask(luigi.Task):
 
         _, model = cnn_classifier_2conv(
             data["train_imgs"],
-            kr.utils.to_categorical(data["train_labels"]),
+            data["train_labels"],  # using sparse categorical cross-entropy
             data["valid_imgs"],
-            kr.utils.to_categorical(data["valid_labels"]),
+            data["valid_labels"],
             model_params,
-            data["classes"],
         )
 
         # save model for serialization
@@ -99,7 +96,6 @@ class RunTalosScanTask(luigi.Task):
     talos_params = luigi.Parameter()  # JSON file with model definition specs
     nepoch = luigi.IntParameter(default=64)
     subsample = luigi.FloatParameter(default=1.0)
-    num_augment = luigi.IntParameter(default=0)
     sigma = luigi.FloatParameter(default=0.5)
     rest_as_other = luigi.BoolParameter(
         default=False
@@ -112,7 +108,6 @@ class RunTalosScanTask(luigi.Task):
             self.target_size,
             self.keep_categories,
             self.fractions,
-            self.num_augment,
             self.sigma,
             self.rest_as_other,
         )
@@ -145,9 +140,9 @@ class RunTalosScanTask(luigi.Task):
 
         scan_object = talos.Scan(
             data["train_imgs"],
-            kr.utils.to_categorical(data["train_labels"]),
+            data["train_labels"],
             x_val=data["valid_imgs"],
-            y_val=kr.utils.to_categorical(data["valid_labels"]),
+            y_val=data["valid_labels"],
             model=cnn_classifier_2conv,  # TODO: update this with new type signature
             params=talos_params,
             fraction_limit=self.subsample,

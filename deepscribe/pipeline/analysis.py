@@ -1,6 +1,6 @@
 import luigi
 from .training import TrainKerasModelFromDefinitionTask
-from .selection import AssignDatasetTask
+from .selection import SelectDatasetTask
 from sklearn.metrics import confusion_matrix, classification_report
 import numpy as np
 import os
@@ -14,8 +14,8 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
 
-# produces confusion matrics from test data
-class TestModelTask(luigi.Task):
+# produces confusion matrix from test dat
+class PlotConfusionMatrixTask(luigi.Task):
     imgfolder = luigi.Parameter()
     hdffolder = luigi.Parameter()
     modelsfolder = luigi.Parameter()
@@ -23,7 +23,7 @@ class TestModelTask(luigi.Task):
     keep_categories = luigi.ListParameter()
     fractions = luigi.ListParameter()  # train/valid/test fraction
     model_definition = luigi.Parameter()  # JSON file with model definition specs
-    num_augment = luigi.IntParameter(default=0)
+    sigma = luigi.FloatParameter(default=0.5)
     rest_as_other = luigi.BoolParameter(
         default=False
     )  # set the remaining as "other" - not recommended for small keep_category lengths
@@ -38,21 +38,23 @@ class TestModelTask(luigi.Task):
                 self.keep_categories,
                 self.fractions,
                 self.model_definition,
-                self.num_augment,
+                self.sigma,
                 self.rest_as_other,
             ),
-            "dataset": AssignDatasetTask(
+            "dataset": SelectDatasetTask(
                 self.imgfolder,
                 self.hdffolder,
                 self.target_size,
                 self.keep_categories,
                 self.fractions,
-                self.num_augment,
+                self.sigma,
                 self.rest_as_other,
             ),
         }
 
     def run(self):
+        # load matrix
+
         # load TF model and dataset
         model = kr.models.load_model(self.input()["model"].path)
         data = np.load(self.input()["dataset"].path)
@@ -68,59 +70,6 @@ class TestModelTask(luigi.Task):
         # compute confusion matrix
 
         confusion = confusion_matrix(data["test_labels"], pred_labels)
-
-        np.save(self.output().path, confusion)
-
-    def output(self):
-        p = Path(self.model_definition)
-        p_data = Path(self.input()["dataset"].path)
-
-        return luigi.LocalTarget(
-            "{}/{}_{}/test_confusion.npy".format(self.modelsfolder, p.stem, p_data.stem)
-        )
-
-
-class PlotConfusionMatrixTask(luigi.Task):
-    imgfolder = luigi.Parameter()
-    hdffolder = luigi.Parameter()
-    modelsfolder = luigi.Parameter()
-    target_size = luigi.IntParameter()  # standardizing to square images
-    keep_categories = luigi.ListParameter()
-    fractions = luigi.ListParameter()  # train/valid/test fraction
-    model_definition = luigi.Parameter()  # JSON file with model definition specs
-    num_augment = luigi.IntParameter(default=0)
-    rest_as_other = luigi.BoolParameter(
-        default=False
-    )  # set the remaining as "other" - not recommended for small keep_category lengths
-
-    def requires(self):
-        return {
-            "confusion_matrix": TestModelTask(
-                self.imgfolder,
-                self.hdffolder,
-                self.modelsfolder,
-                self.target_size,
-                self.keep_categories,
-                self.fractions,
-                self.model_definition,
-                self.num_augment,
-                self.rest_as_other,
-            ),
-            "dataset": AssignDatasetTask(
-                self.imgfolder,
-                self.hdffolder,
-                self.target_size,
-                self.keep_categories,
-                self.fractions,
-                self.num_augment,
-                self.rest_as_other,
-            ),
-        }
-
-    def run(self):
-        # load matrix
-
-        confusion = np.load(self.input()["confusion_matrix"].path)
 
         # get labels from dataset
 
@@ -159,7 +108,7 @@ class GenerateClassificationReportTask(luigi.Task):
     keep_categories = luigi.ListParameter()
     fractions = luigi.ListParameter()  # train/valid/test fraction
     model_definition = luigi.Parameter()  # JSON file with model definition specs
-    num_augment = luigi.IntParameter(default=0)
+    sigma = luigi.FloatParameter(default=0.5)
     rest_as_other = luigi.BoolParameter(
         default=False
     )  # set the remaining as "other" - not recommended for small keep_category lengths
@@ -174,16 +123,16 @@ class GenerateClassificationReportTask(luigi.Task):
                 self.keep_categories,
                 self.fractions,
                 self.model_definition,
-                self.num_augment,
+                self.sigma,
                 self.rest_as_other,
             ),
-            "dataset": AssignDatasetTask(
+            "dataset": SelectDatasetTask(
                 self.imgfolder,
                 self.hdffolder,
                 self.target_size,
                 self.keep_categories,
                 self.fractions,
-                self.num_augment,
+                self.sigma,
                 self.rest_as_other,
             ),
         }
@@ -230,7 +179,7 @@ class PlotMisclassificationTopKTask(luigi.Task):
     keep_categories = luigi.ListParameter()
     fractions = luigi.ListParameter()  # train/valid/test fraction
     model_definition = luigi.Parameter()  # JSON file with model definition specs
-    num_augment = luigi.IntParameter(default=0)
+    sigma = luigi.FloatParameter(default=0.5)
     rest_as_other = luigi.BoolParameter(
         default=False
     )  # set the remaining as "other" - not recommended for small keep_category lengths
@@ -246,16 +195,16 @@ class PlotMisclassificationTopKTask(luigi.Task):
                 self.keep_categories,
                 self.fractions,
                 self.model_definition,
-                self.num_augment,
+                self.sigma,
                 self.rest_as_other,
             ),
-            "dataset": AssignDatasetTask(
+            "dataset": SelectDatasetTask(
                 self.imgfolder,
                 self.hdffolder,
                 self.target_size,
                 self.keep_categories,
                 self.fractions,
-                self.num_augment,
+                self.sigma,
                 self.rest_as_other,
             ),
         }
@@ -328,7 +277,7 @@ class PlotIncorrectTask(luigi.Task):
     keep_categories = luigi.ListParameter()
     fractions = luigi.ListParameter()  # train/valid/test fraction
     model_definition = luigi.Parameter()  # JSON file with model definition specs
-    num_augment = luigi.IntParameter(default=0)
+    sigma = luigi.FloatParameter(default=0.5)
     rest_as_other = luigi.BoolParameter(
         default=False
     )  # set the remaining as "other" - not recommended for small keep_category lengths
@@ -343,16 +292,16 @@ class PlotIncorrectTask(luigi.Task):
                 self.keep_categories,
                 self.fractions,
                 self.model_definition,
-                self.num_augment,
+                self.sigma,
                 self.rest_as_other,
             ),
-            "dataset": AssignDatasetTask(
+            "dataset": SelectDatasetTask(
                 self.imgfolder,
                 self.hdffolder,
                 self.target_size,
                 self.keep_categories,
                 self.fractions,
-                self.num_augment,
+                self.sigma,
                 self.rest_as_other,
             ),
         }
@@ -413,7 +362,7 @@ class RunAnalysisOnTestDataTask(luigi.WrapperTask):
     keep_categories = luigi.ListParameter()
     fractions = luigi.ListParameter()  # train/valid/test fraction
     model_definition = luigi.Parameter()  # JSON file with model definition specs
-    num_augment = luigi.IntParameter(default=0)
+    sigma = luigi.FloatParameter(default=0.5)
     rest_as_other = luigi.BoolParameter(
         default=False
     )  # set the remaining as "other" - not recommended for small keep_category lengths
@@ -429,7 +378,7 @@ class RunAnalysisOnTestDataTask(luigi.WrapperTask):
                 self.keep_categories,
                 self.fractions,
                 self.model_definition,
-                self.num_augment,
+                self.sigma,
                 self.rest_as_other,
             ),
             PlotConfusionMatrixTask(
@@ -440,7 +389,7 @@ class RunAnalysisOnTestDataTask(luigi.WrapperTask):
                 self.keep_categories,
                 self.fractions,
                 self.model_definition,
-                self.num_augment,
+                self.sigma,
                 self.rest_as_other,
             ),
             PlotIncorrectTask(
@@ -451,7 +400,7 @@ class RunAnalysisOnTestDataTask(luigi.WrapperTask):
                 self.keep_categories,
                 self.fractions,
                 self.model_definition,
-                self.num_augment,
+                self.sigma,
                 self.rest_as_other,
             ),
         ]

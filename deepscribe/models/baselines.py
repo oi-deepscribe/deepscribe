@@ -1,21 +1,12 @@
 # baseline models for single-image classification.
 
-import tensorflow as tf
 import tensorflow.keras as kr
-import wandb
-from wandb.keras import WandbCallback
 import numpy as np
 from typing import Dict, Tuple
-import tempfile
 
 
 def cnn_classifier_2conv(
-    x_train: np.array,
-    y_train: np.array,
-    x_val: np.array,
-    y_val: np.array,
-    params: Dict,
-    labels: list,
+    x_train: np.array, y_train: np.array, x_val: np.array, y_val: np.array, params: Dict
 ) -> Tuple[kr.callbacks.History, kr.models.Model]:
     """
 
@@ -71,11 +62,9 @@ def cnn_classifier_2conv(
     # TODO: set learning rate
     model.compile(
         optimizer=params["optimizer"],
-        loss="categorical_crossentropy",
-        metrics=["acc", kr.metrics.AUC(), kr.metrics.TopKCategoricalAccuracy(k=5)],
+        loss="sparse_categorical_crossentropy",
+        metrics=["acc", kr.metrics.TopKCategoricalAccuracy(k=3)],
     )
-
-    # with wandb.init(project="deepscribe", dir=tempfile.mkdtemp()) as run:
 
     history = model.fit(
         x_train,
@@ -83,10 +72,7 @@ def cnn_classifier_2conv(
         batch_size=params["batch_size"],
         epochs=params["epochs"],
         validation_data=(x_val, y_val),
-        callbacks=[
-            # WandbCallback(data_type="image", labels=labels),
-            kr.callbacks.EarlyStopping(monitor="val_loss", patience=3)
-        ],
+        callbacks=[kr.callbacks.EarlyStopping(monitor="val_loss", patience=3)],
     )
 
     return history, model

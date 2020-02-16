@@ -4,7 +4,7 @@ import luigi
 import os
 from tqdm import tqdm
 import h5py
-from deepscribe.pipeline.images import AddGaussianNoiseTask
+from deepscribe.pipeline.images import GaussianBlurTask
 from sklearn.preprocessing import LabelEncoder
 from sklearn.model_selection import train_test_split
 import numpy as np
@@ -25,19 +25,14 @@ class SelectDatasetTask(luigi.Task):
     target_size = luigi.IntParameter()  # standardizing to square images
     keep_categories = luigi.ListParameter()
     fractions = luigi.ListParameter()  # train/valid/test fraction
-    num_augment = luigi.IntParameter(default=0)
     sigma = luigi.FloatParameter(default=0.5)
     rest_as_other = luigi.BoolParameter(
         default=False
     )  # set the remaining as "other" - not recommended for small keep_category lengths
 
     def requires(self):
-        return AddGaussianNoiseTask(
-            self.imgfolder,
-            self.hdffolder,
-            self.target_size,
-            self.sigma,
-            self.num_augment,
+        return GaussianBlurTask(
+            self.imgfolder, self.hdffolder, self.target_size, self.sigma
         )
 
     def run(self):
@@ -48,50 +43,55 @@ class SelectDatasetTask(luigi.Task):
             )
 
         # loads all data into memory.
-        # TODO: not this. Maybe instead of creating the NPY archive we should stream from the HDF archive?
+        # TODO: not this. Maybe instead of creating the NPY archive we could stream from the HDF archive?
         # Convert to TF Data workflow?
 
         data_archive = h5py.File(self.input().path)
 
-        images = []
-        labels = []
+        # TODO: find total array dimensions from hdf archive
+
+        images_lst = []
+        labels_lst = []
 
         original_archive = h5py.File(self.input().path)
 
         for label in tqdm(original_archive.keys(), desc="Selecting labels"):
 
-            for img_group in data_archive[label].keys():
+            if label in self.keep_categories or self.rest_as_other:
 
-                if label in self.keep_categories or self.rest_as_other:
+                all_label_imgs = [
+                    np.array(data_archive[label][img].value)
+                    for img in data_archive[label].keys()
+                ]
 
-                    all_group_imgs = [
-                        np.array(data_archive[label][img_group][img].value)
-                        for img in data_archive[label][img_group].keys()
-                    ]
-                    # appending as a group to keep augmented images of the same class together.
-                    images.append(all_group_imgs)
+                images_lst.extend(all_label_imgs)
 
-                    if label in self.keep_categories:
-                        labels.append(label)
-                    elif self.rest_as_other:
-                        images.append("OTHER")
+                if label in self.keep_categories:
+                    labels_lst.extend([label for img in all_label_imgs])
+                elif self.rest_as_other:
+                    labels_lst.extend(["OTHER" for img in all_label_imgs])
 
         data_archive.close()
         # create categorical labels
         enc = LabelEncoder()
 
-        categorical_labels = enc.fit_transform(labels)
+        fracs = np.array(self.fractions)
+
+        categorical_labels = enc.fit_transform(labels_lst)
+
+        # [n_images, img_dim, img_dim, n_channels] (n_channels) is 1 in this case
+        images = np.expand_dims(np.stack(images_lst, axis=0), axis=-1)
 
         # train/test split
         train_imgs, test_imgs, train_labels, test_labels = train_test_split(
-            images, categorical_labels, test_size=self.fractions[2]
+            images, categorical_labels, test_size=fracs[2]
         )
 
         # split again for validation
 
         # compute validation split
 
-        valid_split = self.fractions[1] / (self.fractions[0] + self.fractions[1])
+        valid_split = fracs[1] / (fracs[0] + fracs[1])
 
         train_imgs, valid_imgs, train_labels, valid_labels = train_test_split(
             train_imgs, train_labels, test_size=valid_split
@@ -103,35 +103,23 @@ class SelectDatasetTask(luigi.Task):
 
         np.savez_compressed(
             self.output().path,
-            train_imgs=SelectDatasetTask.flatten_and_stack(train_imgs),
-            test_imgs=SelectDatasetTask.flatten_and_stack(test_imgs),
-            valid_imgs=SelectDatasetTask.flatten_and_stack(valid_imgs),
-            train_labels=np.tile(train_labels, self.num_augment + 1),
-            test_labels=np.tile(test_labels, self.num_augment + 1),
-            valid_labels=np.tile(valid_labels, self.num_augment + 1),
+            train_imgs=train_imgs,
+            test_imgs=test_imgs,
+            valid_imgs=valid_imgs,
+            train_labels=train_labels,
+            test_labels=test_labels,
+            valid_labels=valid_labels,
             classes=enc.classes_,
         )
 
-    # flattens a list of lists of numpy arrays and stacks them ino one array with
-    # an expanded dimension. Used to keep labels of augmented images consistent.
-    @staticmethod
-    def flatten_and_stack(lst: List[List[np.array]]) -> np.array:
-
-        flattened_list = list(itertools.chain.from_iterable(lst))
-        stacked = np.stack(flattened_list, axis=0)
-        stacked = np.expand_dims(stacked, axis=-1)
-
-        return stacked
-
     def output(self):
         return luigi.LocalTarget(
-            "{}/{}_{}_{}_{}_aug_{}{}.npz".format(
+            "{}/{}_{}_{}_{}{}.npz".format(
                 self.hdffolder,
                 os.path.basename(self.imgfolder),
                 self.target_size,
                 "_".join([str(cat) for cat in self.keep_categories]),
                 self.sigma,
-                self.num_augment,
                 "_OTHER" if self.rest_as_other else "",
             )
         )
