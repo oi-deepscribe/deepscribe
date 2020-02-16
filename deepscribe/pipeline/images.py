@@ -144,7 +144,7 @@ class RescaleImageValuesTask(ProcessImageTask):
         )
 
     def process_image(self, img):
-        return StandardScaler().fit_transform(img)
+        return img / 255.0
 
 
 class GaussianBlurTask(ProcessImageTask):
