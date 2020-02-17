@@ -131,6 +131,7 @@ class StandardizeImageSizeTask(ProcessImageTask):
         return new_im
 
 
+# subtracting out the mean brightness
 class RescaleImageValuesTask(ProcessImageTask):
     # location of image folder
     imgfolder = luigi.Parameter()
@@ -144,7 +145,10 @@ class RescaleImageValuesTask(ProcessImageTask):
         )
 
     def process_image(self, img):
-        return img / 255.0
+
+        scaled = img / 255.0
+
+        return scaled - np.mean(scaled)
 
 
 class GaussianBlurTask(ProcessImageTask):
