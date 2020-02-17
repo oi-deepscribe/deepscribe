@@ -34,7 +34,7 @@ class ProcessImageTask(luigi.Task):
             for label in tqdm(original_archive.keys(), desc="Processing labels"):
                 group = new_archive.require_group(label)
 
-                for img in tqdm(original_archive[label].keys()):
+                for img in original_archive[label].keys():
                     npy_img = original_archive[label][img].value
                     processed_img = self.process_image(npy_img)
 
