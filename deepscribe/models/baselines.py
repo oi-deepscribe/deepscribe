@@ -3,6 +3,9 @@
 import tensorflow.keras as kr
 import numpy as np
 from typing import Dict, Tuple
+import wandb
+from wandb.keras import WandbCallback
+import os
 
 
 def cnn_classifier_2conv(
@@ -66,13 +69,28 @@ def cnn_classifier_2conv(
         metrics=["acc", kr.metrics.TopKCategoricalAccuracy(k=3)],
     )
 
+    callbacks = (
+        [
+            kr.callbacks.EarlyStopping(
+                monitor="val_loss", patience=params["early_stopping"]
+            )
+        ]
+        if "early_stopping" in params
+        else []
+    )
+    # logging params to wandb - not syncing
+    os.environ["WANDB_MODE"] = "dryrun"
+    wandb.init(project="deepscribe", config=params)
+
+    callbacks.append(WandbCallback())
+
     history = model.fit(
         x_train,
         y_train,
         batch_size=params["batch_size"],
         epochs=params["epochs"],
         validation_data=(x_val, y_val),
-        callbacks=[kr.callbacks.EarlyStopping(monitor="val_loss", patience=3)],
+        callbacks=callbacks,
     )
 
     return history, model
