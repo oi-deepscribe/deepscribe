@@ -9,14 +9,14 @@
 #SBATCH --error=confusion-10-%j.err
 #SBATCH --mem=16G
 
-module load cuda/9.1
+module load cuda/10.1
 
 SIGNS='["na","HAL","iš","MEŠ","ma","1","du","da","AN","AŠ"]'
 #SIGNS='["na","HAL"]'
 #SIGNS='["na","HAL","iš","MEŠ","ma","1","du","da","AN","AŠ"]'
 
 
-luigi --module deepscribe.luigi.model_selection RunAnalysisOnTestDataTask --local-scheduler \
+luigi --module deepscribe.pipeline.analysis RunAnalysisOnTestDataTask --local-scheduler \
       --imgfolder data/ochre/a_pfa \
       --hdffolder ../deepscribe-data/processed/pfa_new \
       --modelsfolder models \
