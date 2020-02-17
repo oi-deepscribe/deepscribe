@@ -83,8 +83,9 @@ def cnn_classifier_2conv(
         if "early_stopping" in params
         else []
     )
-    # logging params to wandb - not syncing
-    # os.environ["WANDB_MODE"] = "dryrun"
+    # logging params to wandb - not syncing, active syncing causes
+    # slurm to not terminate the job
+    os.environ["WANDB_MODE"] = "dryrun"
     wandb.init(project="deepscribe", config=params)
 
     callbacks.append(WandbCallback())
