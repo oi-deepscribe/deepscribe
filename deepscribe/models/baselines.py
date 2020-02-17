@@ -1,11 +1,13 @@
 # baseline models for single-image classification.
 
 import tensorflow.keras as kr
+import tensorflow as tf
 import numpy as np
 from typing import Dict, Tuple
 import wandb
 from wandb.keras import WandbCallback
 import os
+from sklearn.utils.class_weight import compute_class_weight
 
 
 def cnn_classifier_2conv(
@@ -22,6 +24,9 @@ def cnn_classifier_2conv(
     :param labels:
     :return:
     """
+
+    if "seed" in params:
+        tf.random.set_seed(params["seed"])
 
     model = kr.models.Sequential()
     model.add(
@@ -79,10 +84,18 @@ def cnn_classifier_2conv(
         else []
     )
     # logging params to wandb - not syncing
-    os.environ["WANDB_MODE"] = "dryrun"
+    # os.environ["WANDB_MODE"] = "dryrun"
     wandb.init(project="deepscribe", config=params)
 
     callbacks.append(WandbCallback())
+
+    if "reweight" in params:
+        class_weights_arr = compute_class_weight(
+            "balanced", np.unique(y_train), y_train
+        )
+        class_weight_dict = dict(enumerate(class_weights_arr))
+    else:
+        class_weight_dict = None
 
     history = model.fit(
         x_train,
@@ -91,6 +104,7 @@ def cnn_classifier_2conv(
         epochs=params["epochs"],
         validation_data=(x_val, y_val),
         callbacks=callbacks,
+        class_weight=class_weight_dict,
     )
 
     return history, model
