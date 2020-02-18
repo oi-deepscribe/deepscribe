@@ -3,7 +3,7 @@
 
 import luigi
 from deepscribe.pipeline.selection import SelectDatasetTask
-from deepscribe.models.baselines import cnn_classifier_2conv
+from deepscribe.models.baselines import cnn_classifier_2conv, cnn_classifier_4conv
 import numpy as np
 import json
 from pathlib import Path
@@ -53,16 +53,22 @@ class TrainKerasModelFromDefinitionTask(luigi.Task):
         #
         data = np.load(self.input().path)
 
-        # converting to one-hot
-
-        _, model = cnn_classifier_2conv(
-            data["train_imgs"],
-            data["train_labels"],  # using sparse categorical cross-entropy
-            data["valid_imgs"],
-            data["valid_labels"],
-            model_params,
-        )
-
+        if "conv4_kernels" in model_params:
+            _, model = cnn_classifier_4conv(
+                data["train_imgs"],
+                data["train_labels"],  # using sparse categorical cross-entropy
+                data["valid_imgs"],
+                data["valid_labels"],
+                model_params,
+            )
+        else:
+            _, model = cnn_classifier_2conv(
+                data["train_imgs"],
+                data["train_labels"],  # using sparse categorical cross-entropy
+                data["valid_imgs"],
+                data["valid_labels"],
+                model_params,
+            )
         # save model for serialization
         model.save(self.output().path)
 
