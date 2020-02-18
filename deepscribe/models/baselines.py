@@ -86,6 +86,9 @@ def cnn_classifier_2conv(
     # logging params to wandb - not syncing, active syncing causes
     # slurm to not terminate the job
     os.environ["WANDB_MODE"] = "dryrun"
+    # adding more stuff to the params dict
+    params["input_shape"] = x_train.shape
+
     wandb.init(project="deepscribe", config=params)
 
     callbacks.append(WandbCallback())
