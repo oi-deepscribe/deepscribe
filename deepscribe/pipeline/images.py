@@ -36,7 +36,8 @@ class ProcessImageTask(luigi.Task):
 
                 for img in original_archive[label].keys():
                     npy_img = original_archive[label][img].value
-                    processed_img = self.process_image(npy_img)
+                    # casting to float32
+                    processed_img = self.process_image(npy_img).astype(np.float32)
 
                     new_dset = group.create_dataset(img, data=processed_img)
 
