@@ -9,7 +9,7 @@
 #SBATCH --error=confusion-4-%j.err
 #SBATCH --mem=16G
 
-module load cuda/10.1
+module load cuda/9.1
 
 SIGNS='["na","HAL","iš","MEŠ"]'
 #SIGNS='["na","HAL"]'
