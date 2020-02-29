@@ -84,6 +84,24 @@ class ImagesToGrayscaleTask(ProcessImageTask):
         return cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
 
+# subtracting out the mean brightness
+class RescaleImageValuesTask(ProcessImageTask):
+    # location of image folder
+    imgfolder = luigi.Parameter()
+    hdffolder = luigi.Parameter()
+    target_size = luigi.IntParameter()  # standardizing to square images
+    identifier = "rescaled"
+
+    def requires(self):
+        return ImagesToGrayscaleTask(self.imgfolder, self.hdffolder)
+
+    def process_image(self, img):
+
+        scaled = img / 255.0
+
+        return scaled - np.mean(scaled)
+
+
 # TODO: do this with only padding or only resizing/scaling?
 class StandardizeImageSizeTask(ProcessImageTask):
     # location of image folder
@@ -93,7 +111,7 @@ class StandardizeImageSizeTask(ProcessImageTask):
     identifier = "standardized"
 
     def requires(self):
-        return ImagesToGrayscaleTask(self.imgfolder, self.hdffolder)
+        return RescaleImageValuesTask(self.imgfolder, self.hdffolder)
 
     def process_image(self, img):
 
@@ -132,26 +150,6 @@ class StandardizeImageSizeTask(ProcessImageTask):
         return new_im
 
 
-# subtracting out the mean brightness
-class RescaleImageValuesTask(ProcessImageTask):
-    # location of image folder
-    imgfolder = luigi.Parameter()
-    hdffolder = luigi.Parameter()
-    target_size = luigi.IntParameter()  # standardizing to square images
-    identifier = "rescaled"
-
-    def requires(self):
-        return StandardizeImageSizeTask(
-            self.imgfolder, self.hdffolder, self.target_size
-        )
-
-    def process_image(self, img):
-
-        scaled = img / 255.0
-
-        return scaled - np.mean(scaled)
-
-
 class GaussianBlurTask(ProcessImageTask):
     # location of image folder
     imgfolder = luigi.Parameter()
@@ -161,7 +159,9 @@ class GaussianBlurTask(ProcessImageTask):
     identifier = "blurred"
 
     def requires(self):
-        return RescaleImageValuesTask(self.imgfolder, self.hdffolder, self.target_size)
+        return StandardizeImageSizeTask(
+            self.imgfolder, self.hdffolder, self.target_size
+        )
 
     def process_image(self, img):
         return gaussian_filter(img, sigma=self.sigma)
