@@ -89,7 +89,6 @@ class RescaleImageValuesTask(ProcessImageTask):
     # location of image folder
     imgfolder = luigi.Parameter()
     hdffolder = luigi.Parameter()
-    target_size = luigi.IntParameter()  # standardizing to square images
     identifier = "rescaled"
 
     def requires(self):
