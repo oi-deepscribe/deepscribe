@@ -14,5 +14,5 @@
 "batch_size":  32,
 "epochs": 128,
 "optimizer": "adam",
-"early_stopping": 50,
+"early_stopping": 10,
 "reweight": true}
