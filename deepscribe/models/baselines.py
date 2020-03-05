@@ -88,6 +88,7 @@ def cnn_classifier_2conv(
     os.environ["WANDB_MODE"] = "dryrun"
     # adding more stuff to the params dict
     params["input_shape"] = x_train.shape
+    params["SLURM_RUN"] = os.environ["SLURM_JOB_ID"]
 
     wandb.init(project="deepscribe", config=params)
 
