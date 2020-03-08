@@ -31,8 +31,10 @@ class OchreToHD5Task(luigi.Task):
             # iterate through directory, copy images
 
             for file in tqdm(os.listdir(self.input().path)):
-                # loading image from disk
-                img = cv2.imread("{}/{}".format(self.input().path, file))
+                # loading image from disk in grayscale
+                img = cv2.imread(
+                    "{}/{}".format(self.input().path, file), cv2.IMREAD_GRAYSCALE
+                )
 
                 if img is not None:
                     # parsing filename according to OCHRE spec

@@ -88,7 +88,7 @@ def cnn_classifier_2conv(
     os.environ["WANDB_MODE"] = "dryrun"
     # adding more stuff to the params dict
     params["input_shape"] = x_train.shape
-    params["SLURM_RUN"] = os.environ["SLURM_JOB_ID"]
+    params["SLURM_RUN"] = os.environ.get("SLURM_JOB_ID", "NONE")
 
     wandb.init(project="deepscribe", config=params)
 
@@ -102,10 +102,17 @@ def cnn_classifier_2conv(
     else:
         class_weight_dict = None
 
-    history = model.fit(
-        x_train,
-        y_train,
-        batch_size=params["batch_size"],
+    # use image data generator to perform random translations
+
+    shear_range = params.get("shear", 0.0)
+    zoom_range = params.get("zoom", 0.0)
+    data_gen = kr.preprocessing.image.ImageDataGenerator(
+        shear_range=shear_range, zoom_range=zoom_range
+    )
+
+    history = model.fit_generator(
+        data_gen.flow(x_train, y=y_train),
+        steps_per_epoch=x_train.shape[0] / params["batch_size"],
         epochs=params["epochs"],
         validation_data=(x_val, y_val),
         callbacks=callbacks,

@@ -12,6 +12,7 @@ dependencies:
   - tqdm
   - scikit-image
   - scikit-learn
+  - nb_conda
   - opencv
   - h5py
   - luigi

@@ -21,6 +21,7 @@ class TrainKerasModelFromDefinitionTask(luigi.Task):
     rest_as_other = luigi.BoolParameter(
         default=False
     )  # set the remaining as "other" - not recommended for small keep_category lengths
+    whiten = luigi.BoolParameter(default=False)
 
     def requires(self):
         return SelectDatasetTask(
@@ -31,6 +32,7 @@ class TrainKerasModelFromDefinitionTask(luigi.Task):
             self.fractions,
             self.sigma,
             self.rest_as_other,
+            self.whiten,
         )
 
     def run(self):

@@ -27,6 +27,7 @@ class PlotConfusionMatrixTask(luigi.Task):
     rest_as_other = luigi.BoolParameter(
         default=False
     )  # set the remaining as "other" - not recommended for small keep_category lengths
+    whiten = luigi.BoolParameter(default=False)
 
     def requires(self):
         return {
@@ -40,6 +41,7 @@ class PlotConfusionMatrixTask(luigi.Task):
                 self.model_definition,
                 self.sigma,
                 self.rest_as_other,
+                self.whiten,
             ),
             "dataset": SelectDatasetTask(
                 self.imgfolder,
@@ -112,6 +114,7 @@ class GenerateClassificationReportTask(luigi.Task):
     rest_as_other = luigi.BoolParameter(
         default=False
     )  # set the remaining as "other" - not recommended for small keep_category lengths
+    whiten = luigi.BoolParameter(default=False)
 
     def requires(self):
         return {
@@ -125,6 +128,7 @@ class GenerateClassificationReportTask(luigi.Task):
                 self.model_definition,
                 self.sigma,
                 self.rest_as_other,
+                self.whiten,
             ),
             "dataset": SelectDatasetTask(
                 self.imgfolder,
@@ -134,6 +138,7 @@ class GenerateClassificationReportTask(luigi.Task):
                 self.fractions,
                 self.sigma,
                 self.rest_as_other,
+                self.whiten,
             ),
         }
 
@@ -171,103 +176,6 @@ class GenerateClassificationReportTask(luigi.Task):
         )
 
 
-class PlotMisclassificationTopKTask(luigi.Task):
-    imgfolder = luigi.Parameter()
-    hdffolder = luigi.Parameter()
-    modelsfolder = luigi.Parameter()
-    target_size = luigi.IntParameter()  # standardizing to square images
-    keep_categories = luigi.ListParameter()
-    fractions = luigi.ListParameter()  # train/valid/test fraction
-    model_definition = luigi.Parameter()  # JSON file with model definition specs
-    sigma = luigi.FloatParameter(default=0.5)
-    rest_as_other = luigi.BoolParameter(
-        default=False
-    )  # set the remaining as "other" - not recommended for small keep_category lengths
-    k = luigi.IntParameter(default=5)
-
-    def requires(self):
-        return {
-            "model": TrainKerasModelFromDefinitionTask(
-                self.imgfolder,
-                self.hdffolder,
-                self.modelsfolder,
-                self.target_size,
-                self.keep_categories,
-                self.fractions,
-                self.model_definition,
-                self.sigma,
-                self.rest_as_other,
-            ),
-            "dataset": SelectDatasetTask(
-                self.imgfolder,
-                self.hdffolder,
-                self.target_size,
-                self.keep_categories,
-                self.fractions,
-                self.sigma,
-                self.rest_as_other,
-            ),
-        }
-
-    def run(self):
-
-        os.mkdir(self.output().path)
-
-        # load TF model and dataset
-        model = kr.models.load_model(self.input()["model"].path)
-        data = np.load(self.input()["dataset"].path)
-
-        # make predictions on data
-
-        # (batch_size, num_classes)
-        pred_logits = model.predict(data["test_imgs"])
-
-        # (batch_size,)
-        in_top_k = kr.backend.in_top_k(pred_logits, data["test_labels"], self.k)
-
-        in_top_k_arr = tf.Session().run([in_top_k])
-
-        # get indices of datapoints that aren't in the top k
-
-        num_incorrect = int(np.sum(np.logical_not(in_top_k_arr)))
-
-        print(data["test_imgs"].shape)
-        print(np.logical_not(in_top_k_arr).shape)
-        # (num_incorrect, img_size_x, img_size_y, img_depth)
-        incorrect_top_5 = data["test_imgs"][
-            np.squeeze(np.logical_not(in_top_k_arr)), :, :
-        ]
-        # (num_incorrect,)
-        incorrect_top_5_truth = data["test_labels"][
-            np.squeeze(np.logical_not(in_top_k_arr))
-        ]
-        # (num_incorrect, num_classes)
-        incorrect_logits = pred_logits[np.squeeze(np.logical_not(in_top_k_arr)), :]
-
-        for i in range(num_incorrect):
-            img = np.squeeze(incorrect_top_5[i, :, :])
-            ground_truth = data["classes"][incorrect_top_5_truth[i]]
-            top_k_predictions = np.argsort(incorrect_logits[i, :])[0 : self.k]
-            top_k_predicted_labels = data["classes"][top_k_predictions]
-
-            fig = plt.figure()
-            plt.title(
-                f"Misclassified Image {i} - predicted {top_k_predicted_labels}, truth {ground_truth}"
-            )
-            plt.imshow(img, cmap="gray")
-
-            plt.savefig(f"{self.output().path}/misclassified-{i}.png")
-            plt.close(fig)
-
-    def output(self):
-        p = Path(self.model_definition)
-        p_data = Path(self.input()["dataset"].path)
-
-        return luigi.LocalTarget(
-            "{}/{}_{}/test_misclassified".format(self.modelsfolder, p.stem, p_data.stem)
-        )
-
-
 # plots a random sample of 16 incorrect images from test..
 class PlotIncorrectTask(luigi.Task):
     imgfolder = luigi.Parameter()
@@ -281,6 +189,7 @@ class PlotIncorrectTask(luigi.Task):
     rest_as_other = luigi.BoolParameter(
         default=False
     )  # set the remaining as "other" - not recommended for small keep_category lengths
+    whiten = luigi.BoolParameter(default=False)
 
     def requires(self):
         return {
@@ -294,6 +203,7 @@ class PlotIncorrectTask(luigi.Task):
                 self.model_definition,
                 self.sigma,
                 self.rest_as_other,
+                self.whiten,
             ),
             "dataset": SelectDatasetTask(
                 self.imgfolder,
@@ -303,6 +213,7 @@ class PlotIncorrectTask(luigi.Task):
                 self.fractions,
                 self.sigma,
                 self.rest_as_other,
+                self.whiten,
             ),
         }
 
@@ -366,7 +277,7 @@ class RunAnalysisOnTestDataTask(luigi.WrapperTask):
     rest_as_other = luigi.BoolParameter(
         default=False
     )  # set the remaining as "other" - not recommended for small keep_category lengths
-    k = luigi.IntParameter(default=5)
+    whiten = luigi.BoolParameter(default=False)
 
     def requires(self):
         return [
@@ -380,6 +291,7 @@ class RunAnalysisOnTestDataTask(luigi.WrapperTask):
                 self.model_definition,
                 self.sigma,
                 self.rest_as_other,
+                self.whiten,
             ),
             PlotConfusionMatrixTask(
                 self.imgfolder,
@@ -391,6 +303,7 @@ class RunAnalysisOnTestDataTask(luigi.WrapperTask):
                 self.model_definition,
                 self.sigma,
                 self.rest_as_other,
+                self.whiten,
             ),
             PlotIncorrectTask(
                 self.imgfolder,
@@ -402,5 +315,6 @@ class RunAnalysisOnTestDataTask(luigi.WrapperTask):
                 self.model_definition,
                 self.sigma,
                 self.rest_as_other,
+                self.whiten,
             ),
         ]

@@ -25,4 +25,4 @@ luigi --module deepscribe.pipeline.analysis RunAnalysisOnTestDataTask --local-sc
       --keep-categories $SIGNS  \
       --fractions '[0.7, 0.1, 0.2]' \
       --model-definition data/model_defs/alexnet-small-earlystopping-10-reweighted.json \
-      --k 1
+      --whiten

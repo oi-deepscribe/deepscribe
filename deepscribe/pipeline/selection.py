@@ -4,12 +4,11 @@ import luigi
 import os
 from tqdm import tqdm
 import h5py
-from deepscribe.pipeline.images import GaussianBlurTask
+from deepscribe.pipeline.images import StandardizeImageSizeTask
 from sklearn.preprocessing import LabelEncoder
 from sklearn.model_selection import train_test_split
 import numpy as np
-import itertools
-from typing import List
+from tensorflow.keras.preprocessing.image import ImageDataGenerator
 
 
 class SelectDatasetTask(luigi.Task):
@@ -29,9 +28,12 @@ class SelectDatasetTask(luigi.Task):
     rest_as_other = luigi.BoolParameter(
         default=False
     )  # set the remaining as "other" - not recommended for small keep_category lengths
+    whiten = luigi.BoolParameter(
+        default=False
+    )  # perform ZCA whitening on whole dataset
 
     def requires(self):
-        return GaussianBlurTask(
+        return StandardizeImageSizeTask(
             self.imgfolder, self.hdffolder, self.target_size, self.sigma
         )
 
@@ -43,8 +45,7 @@ class SelectDatasetTask(luigi.Task):
             )
 
         # loads all data into memory.
-        # TODO: not this. Maybe instead of creating the NPY archive we could stream from the HDF archive?
-        # Convert to TF Data workflow?
+        # TODO: investigate streaming directly from HDF5 dataset
 
         data_archive = h5py.File(self.input().path)
 
@@ -74,13 +75,24 @@ class SelectDatasetTask(luigi.Task):
         data_archive.close()
         # create categorical labels
         enc = LabelEncoder()
-
-        fracs = np.array(self.fractions)
-
         categorical_labels = enc.fit_transform(labels_lst)
 
         # [n_images, img_dim, img_dim, n_channels] (n_channels) is 1 in this case
         images = np.expand_dims(np.stack(images_lst, axis=0), axis=-1)
+
+        # perform ZCA whitening on entire dataset if specified
+        if self.whiten:
+            datagen = ImageDataGenerator(
+                zca_whitening=True
+            )  # using default epsilon for now
+            datagen.fit(images)
+            # get everything back out
+
+            images, categorical_labels = datagen.flow(
+                images, y=categorical_labels, batch_size=images.shape[0]
+            ).next()
+
+        fracs = np.array(self.fractions)
 
         # train/test split
         train_imgs, test_imgs, train_labels, test_labels = train_test_split(
@@ -89,15 +101,11 @@ class SelectDatasetTask(luigi.Task):
 
         # split again for validation
 
-        # compute validation split
-
         valid_split = fracs[1] / (fracs[0] + fracs[1])
 
         train_imgs, valid_imgs, train_labels, valid_labels = train_test_split(
             train_imgs, train_labels, test_size=valid_split
         )
-
-        # flatten arrays and expand dims
 
         # repeat train and test labels
 
@@ -114,12 +122,13 @@ class SelectDatasetTask(luigi.Task):
 
     def output(self):
         return luigi.LocalTarget(
-            "{}/{}_{}_{}_{}{}.npz".format(
+            "{}/{}_{}_{}_{}{}{}.npz".format(
                 self.hdffolder,
                 os.path.basename(self.imgfolder),
                 self.target_size,
                 "_".join([str(cat) for cat in self.keep_categories]),
                 self.sigma,
                 "_OTHER" if self.rest_as_other else "",
+                "_whitened" if self.whiten else "",
             )
         )
