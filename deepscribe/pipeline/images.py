@@ -131,10 +131,11 @@ class StandardizeImageSizeTask(ProcessImageTask):
         left, right = delta_w // 2, delta_w - (delta_w // 2)
 
         # filtering here before padding! otherwise, filter will be applied to the border as well.
-        img_filtered = gaussian_filter(img, sigma=float(self.sigma))
 
         new_im = cv2.copyMakeBorder(
-            img_filtered, top, bottom, left, right, cv2.BORDER_CONSTANT, value=0
+            img, top, bottom, left, right, cv2.BORDER_CONSTANT, value=0
         )
 
-        return new_im
+        img_filtered = gaussian_filter(new_im, sigma=float(self.sigma))
+
+        return img_filtered
