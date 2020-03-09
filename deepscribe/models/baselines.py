@@ -110,24 +110,24 @@ def cnn_classifier_2conv(
         shear_range=shear_range, zoom_range=zoom_range
     )
 
-    # history = model.fit_generator(
-    #     data_gen.flow(x_train, y=y_train, batch_size=params["batch_size"]),
-    #     steps_per_epoch=x_train.shape[0] / params["batch_size"],
-    #     epochs=params["epochs"],
-    #     validation_data=(x_val, y_val),
-    #     callbacks=callbacks,
-    #     class_weight=class_weight_dict,
-    # )
-
-    history = model.fit(
-        x=x_train,
-        y=y_train,
-        batch_size=params["batch_size"],
+    history = model.fit_generator(
+        data_gen.flow(x_train, y=y_train, batch_size=params["batch_size"]),
+        steps_per_epoch=x_train.shape[0] / params["batch_size"],
         epochs=params["epochs"],
         validation_data=(x_val, y_val),
         callbacks=callbacks,
         class_weight=class_weight_dict,
     )
+
+    # history = model.fit(
+    #     x=x_train,
+    #     y=y_train,
+    #     batch_size=params["batch_size"],
+    #     epochs=params["epochs"],
+    #     validation_data=(x_val, y_val),
+    #     callbacks=callbacks,
+    #     class_weight=class_weight_dict,
+    # )
 
     return history, model
 
