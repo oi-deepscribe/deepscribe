@@ -5,6 +5,7 @@ import os
 from tqdm import tqdm
 import cv2
 import h5py
+import unicodedata
 
 
 class OchreDatasetTask(luigi.ExternalTask):
@@ -27,10 +28,14 @@ class OchreToHD5Task(luigi.Task):
         # open temporary path
 
         with self.output().temporary_path() as self.temp_output_path:
-            archive = h5py.File(self.temp_output_path)
+            archive = h5py.File(self.temp_output_path, "w")
             # iterate through directory, copy images
 
-            for file in tqdm(os.listdir(self.input().path)):
+            for f in tqdm(os.listdir(self.input().path)):
+
+                # normalize filepaths!
+                file = unicodedata.normalize("NFC", f)
+
                 # loading image from disk in grayscale
                 img = cv2.imread(
                     "{}/{}".format(self.input().path, file), cv2.IMREAD_GRAYSCALE
@@ -42,6 +47,7 @@ class OchreToHD5Task(luigi.Task):
 
                     sign, image_uuid, obj_uuid = fname.split("_")
                     # creating groups for signs
+                    # requiring bytestrings
                     current_group = archive.require_group(sign)
 
                     dset = current_group.create_dataset(fname, data=img)

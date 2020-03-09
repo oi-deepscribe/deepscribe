@@ -27,15 +27,15 @@ class ProcessImageTask(luigi.Task):
 
     def run(self):
         with self.output().temporary_path() as self.temp_output_path:
-            new_archive = h5py.File(self.temp_output_path)
+            new_archive = h5py.File(self.temp_output_path, "w")
 
-            original_archive = h5py.File(self.input().path)
+            original_archive = h5py.File(self.input().path, "r")
 
             for label in tqdm(original_archive.keys(), desc="Processing labels"):
                 group = new_archive.require_group(label)
 
                 for img in original_archive[label].keys():
-                    npy_img = original_archive[label][img].value
+                    npy_img = np.array(original_archive[label][img])
                     # casting to float32
                     processed_img = self.process_image(npy_img).astype(np.float32)
 
@@ -132,10 +132,10 @@ class StandardizeImageSizeTask(ProcessImageTask):
 
         # filtering here before padding! otherwise, filter will be applied to the border as well.
 
+        img_filtered = gaussian_filter(img, sigma=float(self.sigma))
+
         new_im = cv2.copyMakeBorder(
-            img, top, bottom, left, right, cv2.BORDER_CONSTANT, value=0
+            img_filtered, top, bottom, left, right, cv2.BORDER_CONSTANT, value=0
         )
 
-        img_filtered = gaussian_filter(new_im, sigma=float(self.sigma))
-
-        return img_filtered
+        return new_im

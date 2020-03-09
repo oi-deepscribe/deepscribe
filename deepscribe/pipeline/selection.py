@@ -47,30 +47,39 @@ class SelectDatasetTask(luigi.Task):
         # loads all data into memory.
         # TODO: investigate streaming directly from HDF5 dataset
 
-        data_archive = h5py.File(self.input().path)
+        data_archive = h5py.File(self.input().path, "r")
 
         # TODO: find total array dimensions from hdf archive
 
         images_lst = []
         labels_lst = []
 
-        original_archive = h5py.File(self.input().path)
+        for label in tqdm(self.keep_categories, desc="Selecting Labels"):
+            all_label_imgs = [
+                np.array(data_archive[label][img]) for img in data_archive[label].keys()
+            ]
 
-        for label in tqdm(original_archive.keys(), desc="Selecting labels"):
+            images_lst.extend(all_label_imgs)
 
-            if label in self.keep_categories or self.rest_as_other:
+            labels_lst.extend([label for img in all_label_imgs])
 
+        # getting the rest. Slight code reuse but easier to debug.
+        if self.rest_as_other:
+            other_labels = [
+                label
+                for label in data_archive.keys()
+                if label not in self.keep_categories
+            ]
+
+            for label in tqdm(other_labels, desc="Getting OTHER labels"):
                 all_label_imgs = [
-                    np.array(data_archive[label][img].value)
+                    np.array(data_archive[label][img])
                     for img in data_archive[label].keys()
                 ]
 
                 images_lst.extend(all_label_imgs)
 
-                if label in self.keep_categories:
-                    labels_lst.extend([label for img in all_label_imgs])
-                elif self.rest_as_other:
-                    labels_lst.extend(["OTHER" for img in all_label_imgs])
+                labels_lst.extend(["OTHER" for img in all_label_imgs])
 
         data_archive.close()
         # create categorical labels
