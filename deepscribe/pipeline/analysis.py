@@ -51,6 +51,7 @@ class PlotConfusionMatrixTask(luigi.Task):
                 self.fractions,
                 self.sigma,
                 self.rest_as_other,
+                self.whiten,
             ),
         }
 
