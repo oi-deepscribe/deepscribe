@@ -88,6 +88,27 @@ class RescaleImageValuesTask(ProcessImageTask):
         return scaled - np.mean(scaled)
 
 
+class ThresholdImageTask(ProcessImageTask):
+    """
+    Performing Otsu thresholding - as an alternative to rescaling.
+
+    """
+
+    # location of image folder
+    imgfolder = luigi.Parameter()
+    hdffolder = luigi.Parameter()
+    # optional, if not using this set it to zero
+    identifier = "thresholded"
+
+    def requires(self):
+        return OchreToHD5Task(self.imgfolder, self.hdffolder)
+
+    def process_image(self, img):
+        _, threshed = cv2.threshold(img, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+
+        return threshed
+
+
 class StandardizeImageSizeTask(ProcessImageTask):
     # location of image folder
     imgfolder = luigi.Parameter()
@@ -96,10 +117,14 @@ class StandardizeImageSizeTask(ProcessImageTask):
     sigma = luigi.FloatParameter(
         default=0.0
     )  # optional, if not using this set it to zero
+    threshold = luigi.BoolParameter(default=False)
     identifier = "resized"
 
     def requires(self):
-        return RescaleImageValuesTask(self.imgfolder, self.hdffolder)
+        if self.threshold:
+            return ThresholdImageTask(self.imgfolder, self.hdffolder)
+        else:
+            return RescaleImageValuesTask(self.imgfolder, self.hdffolder)
 
     def process_image(self, img):
 

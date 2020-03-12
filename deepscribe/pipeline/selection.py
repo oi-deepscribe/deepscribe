@@ -25,6 +25,7 @@ class SelectDatasetTask(luigi.Task):
     keep_categories = luigi.ListParameter()
     fractions = luigi.ListParameter()  # train/valid/test fraction
     sigma = luigi.FloatParameter(default=0.5)
+    threshold = luigi.BoolParameter(default=False)
     rest_as_other = luigi.BoolParameter(
         default=False
     )  # set the remaining as "other" - not recommended for small keep_category lengths
@@ -35,7 +36,7 @@ class SelectDatasetTask(luigi.Task):
 
     def requires(self):
         return StandardizeImageSizeTask(
-            self.imgfolder, self.hdffolder, self.target_size, self.sigma
+            self.imgfolder, self.hdffolder, self.target_size, self.sigma, self.threshold
         )
 
     def run(self):
@@ -130,7 +131,7 @@ class SelectDatasetTask(luigi.Task):
 
     def output(self):
         return luigi.LocalTarget(
-            "{}/{}_{}_{}_{}{}{}.npz".format(
+            "{}/{}_{}_{}_{}{}{}{}.npz".format(
                 self.hdffolder,
                 os.path.basename(self.imgfolder),
                 self.target_size,
@@ -138,5 +139,6 @@ class SelectDatasetTask(luigi.Task):
                 self.sigma,
                 "_OTHER" if self.rest_as_other else "",
                 f"_whitened_{self.epsilon}" if self.whiten else "",
+                "threshed" if self.threshold else "",
             )
         )

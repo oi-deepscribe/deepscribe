@@ -41,6 +41,7 @@ class PlotConfusionMatrixTask(luigi.Task):
                 self.fractions,
                 self.model_definition,
                 self.sigma,
+                self.threshold,
                 self.rest_as_other,
                 self.whiten,
                 self.epsilon,
@@ -52,6 +53,7 @@ class PlotConfusionMatrixTask(luigi.Task):
                 self.keep_categories,
                 self.fractions,
                 self.sigma,
+                self.threshold,
                 self.rest_as_other,
                 self.whiten,
                 self.epsilon,
@@ -132,6 +134,7 @@ class GenerateClassificationReportTask(luigi.Task):
                 self.fractions,
                 self.model_definition,
                 self.sigma,
+                self.threshold,
                 self.rest_as_other,
                 self.whiten,
                 self.epsilon,
@@ -143,6 +146,7 @@ class GenerateClassificationReportTask(luigi.Task):
                 self.keep_categories,
                 self.fractions,
                 self.sigma,
+                self.threshold,
                 self.rest_as_other,
                 self.whiten,
                 self.epsilon,
@@ -210,6 +214,7 @@ class PlotIncorrectTask(luigi.Task):
                 self.fractions,
                 self.model_definition,
                 self.sigma,
+                self.threshold,
                 self.rest_as_other,
                 self.whiten,
                 self.epsilon,
@@ -221,6 +226,7 @@ class PlotIncorrectTask(luigi.Task):
                 self.keep_categories,
                 self.fractions,
                 self.sigma,
+                self.threshold,
                 self.rest_as_other,
                 self.whiten,
                 self.epsilon,
@@ -284,6 +290,7 @@ class RunAnalysisOnTestDataTask(luigi.WrapperTask):
     fractions = luigi.ListParameter()  # train/valid/test fraction
     model_definition = luigi.Parameter()  # JSON file with model definition specs
     sigma = luigi.FloatParameter(default=0.5)
+    threshold = luigi.BoolParameter(default=False)
     rest_as_other = luigi.BoolParameter(
         default=False
     )  # set the remaining as "other" - not recommended for small keep_category lengths
@@ -301,6 +308,7 @@ class RunAnalysisOnTestDataTask(luigi.WrapperTask):
                 self.fractions,
                 self.model_definition,
                 self.sigma,
+                self.threshold,
                 self.rest_as_other,
                 self.whiten,
                 self.epsilon,
@@ -314,6 +322,7 @@ class RunAnalysisOnTestDataTask(luigi.WrapperTask):
                 self.fractions,
                 self.model_definition,
                 self.sigma,
+                self.threshold,
                 self.rest_as_other,
                 self.whiten,
                 self.epsilon,
@@ -327,6 +336,7 @@ class RunAnalysisOnTestDataTask(luigi.WrapperTask):
                 self.fractions,
                 self.model_definition,
                 self.sigma,
+                self.threshold,
                 self.rest_as_other,
                 self.whiten,
                 self.epsilon,
