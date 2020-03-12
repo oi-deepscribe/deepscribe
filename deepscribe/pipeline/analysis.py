@@ -24,6 +24,7 @@ class PlotConfusionMatrixTask(luigi.Task):
     fractions = luigi.ListParameter()  # train/valid/test fraction
     model_definition = luigi.Parameter()  # JSON file with model definition specs
     sigma = luigi.FloatParameter(default=0.5)
+    threshold = luigi.BoolParameter(default=False)
     rest_as_other = luigi.BoolParameter(
         default=False
     )  # set the remaining as "other" - not recommended for small keep_category lengths
@@ -117,6 +118,7 @@ class GenerateClassificationReportTask(luigi.Task):
     fractions = luigi.ListParameter()  # train/valid/test fraction
     model_definition = luigi.Parameter()  # JSON file with model definition specs
     sigma = luigi.FloatParameter(default=0.5)
+    threshold = luigi.BoolParameter(default=False)
     rest_as_other = luigi.BoolParameter(
         default=False
     )  # set the remaining as "other" - not recommended for small keep_category lengths
@@ -197,6 +199,7 @@ class PlotIncorrectTask(luigi.Task):
     fractions = luigi.ListParameter()  # train/valid/test fraction
     model_definition = luigi.Parameter()  # JSON file with model definition specs
     sigma = luigi.FloatParameter(default=0.5)
+    threshold = luigi.BoolParameter(default=False)
     rest_as_other = luigi.BoolParameter(
         default=False
     )  # set the remaining as "other" - not recommended for small keep_category lengths
