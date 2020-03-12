@@ -31,6 +31,7 @@ class SelectDatasetTask(luigi.Task):
     whiten = luigi.BoolParameter(
         default=False
     )  # perform ZCA whitening on whole dataset
+    epsilon = luigi.FloatParameter(default=0.1)
 
     def requires(self):
         return StandardizeImageSizeTask(
@@ -138,6 +139,6 @@ class SelectDatasetTask(luigi.Task):
                 "_".join([str(cat) for cat in self.keep_categories]),
                 self.sigma,
                 "_OTHER" if self.rest_as_other else "",
-                "_whitened" if self.whiten else "",
+                f"_whitened_{self.epsilon}" if self.whiten else "",
             )
         )
