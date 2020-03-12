@@ -28,6 +28,7 @@ class PlotConfusionMatrixTask(luigi.Task):
         default=False
     )  # set the remaining as "other" - not recommended for small keep_category lengths
     whiten = luigi.BoolParameter(default=False)
+    epsilon = luigi.FloatParameter(default=0.1)
 
     def requires(self):
         return {
@@ -42,6 +43,7 @@ class PlotConfusionMatrixTask(luigi.Task):
                 self.sigma,
                 self.rest_as_other,
                 self.whiten,
+                self.epsilon,
             ),
             "dataset": SelectDatasetTask(
                 self.imgfolder,
@@ -52,6 +54,7 @@ class PlotConfusionMatrixTask(luigi.Task):
                 self.sigma,
                 self.rest_as_other,
                 self.whiten,
+                self.epsilon,
             ),
         }
 
@@ -116,6 +119,7 @@ class GenerateClassificationReportTask(luigi.Task):
         default=False
     )  # set the remaining as "other" - not recommended for small keep_category lengths
     whiten = luigi.BoolParameter(default=False)
+    epsilon = luigi.FloatParameter(default=0.1)
 
     def requires(self):
         return {
@@ -130,6 +134,7 @@ class GenerateClassificationReportTask(luigi.Task):
                 self.sigma,
                 self.rest_as_other,
                 self.whiten,
+                self.epsilon,
             ),
             "dataset": SelectDatasetTask(
                 self.imgfolder,
@@ -140,6 +145,7 @@ class GenerateClassificationReportTask(luigi.Task):
                 self.sigma,
                 self.rest_as_other,
                 self.whiten,
+                self.epsilon,
             ),
         }
 
@@ -191,6 +197,7 @@ class PlotIncorrectTask(luigi.Task):
         default=False
     )  # set the remaining as "other" - not recommended for small keep_category lengths
     whiten = luigi.BoolParameter(default=False)
+    epsilon = luigi.FloatParameter(default=0.1)
 
     def requires(self):
         return {
@@ -205,6 +212,7 @@ class PlotIncorrectTask(luigi.Task):
                 self.sigma,
                 self.rest_as_other,
                 self.whiten,
+                self.epsilon,
             ),
             "dataset": SelectDatasetTask(
                 self.imgfolder,
@@ -215,6 +223,7 @@ class PlotIncorrectTask(luigi.Task):
                 self.sigma,
                 self.rest_as_other,
                 self.whiten,
+                self.epsilon,
             ),
         }
 
@@ -279,6 +288,7 @@ class RunAnalysisOnTestDataTask(luigi.WrapperTask):
         default=False
     )  # set the remaining as "other" - not recommended for small keep_category lengths
     whiten = luigi.BoolParameter(default=False)
+    epsilon = luigi.FloatParameter(default=0.1)
 
     def requires(self):
         return [
@@ -293,6 +303,7 @@ class RunAnalysisOnTestDataTask(luigi.WrapperTask):
                 self.sigma,
                 self.rest_as_other,
                 self.whiten,
+                self.epsilon,
             ),
             PlotConfusionMatrixTask(
                 self.imgfolder,
@@ -305,6 +316,7 @@ class RunAnalysisOnTestDataTask(luigi.WrapperTask):
                 self.sigma,
                 self.rest_as_other,
                 self.whiten,
+                self.epsilon,
             ),
             PlotIncorrectTask(
                 self.imgfolder,
@@ -317,5 +329,6 @@ class RunAnalysisOnTestDataTask(luigi.WrapperTask):
                 self.sigma,
                 self.rest_as_other,
                 self.whiten,
+                self.epsilon,
             ),
         ]

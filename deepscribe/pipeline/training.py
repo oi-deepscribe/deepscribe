@@ -22,6 +22,7 @@ class TrainKerasModelFromDefinitionTask(luigi.Task):
         default=False
     )  # set the remaining as "other" - not recommended for small keep_category lengths
     whiten = luigi.BoolParameter(default=False)
+    epsilon = luigi.FloatParameter(default=0.1)
 
     def requires(self):
         return SelectDatasetTask(
@@ -33,6 +34,7 @@ class TrainKerasModelFromDefinitionTask(luigi.Task):
             self.sigma,
             self.rest_as_other,
             self.whiten,
+            self.epsilon,
         )
 
     def run(self):
