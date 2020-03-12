@@ -93,7 +93,7 @@ class SelectDatasetTask(luigi.Task):
         # perform ZCA whitening on entire dataset if specified
         if self.whiten:
             datagen = ImageDataGenerator(
-                zca_whitening=True
+                zca_whitening=True, zca_epsilon=self.epsilon
             )  # using default epsilon for now
             datagen.fit(images)
             # get everything back out
