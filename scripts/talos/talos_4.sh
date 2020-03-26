@@ -11,20 +11,13 @@
 
 module load cuda/9.1
 
-#SIGNS='["na","HAL","iš","MEŠ"]'
-#SIGNS='["na","HAL"]'
-#SIGNS='["na","HAL","iš","MEŠ","ma","1","du","da","AN","AŠ"]'
-SIGNS='["na","HAL","iš","MEŠ","ma","1","du","da","AN","AŠ","ka₄","kur","2","ba","ra","šá","be","20","3","SAL","ul","ITI","ia","KI","MIN","hu","man","QA","me","mi","ti","um","m°n","ha","10","taš","ak","ri","BAR","4","gal","pu","ku","ir","mar","ip","´","ki","an","5"]'
-
+SIGNS='["na","HAL","iš","MEŠ"]'
 
 luigi --module deepscribe.luigi.training RunTalosScanTask --local-scheduler \
       --imgfolder data/ochre/a_pfa \
-      --hdffolder data/processed/pfa_new \
+      --hdffolder ../deepscribe-data/processed/pfa_new \
       --modelsfolder models \
       --target-size 50 \
       --keep-categories $SIGNS  \
-      --nepochs 128 \
       --fractions '[0.7, 0.1, 0.2]' \
-      --talos-params data/talos_params/varied_knums.json \
-      --num-augment 0 \
-      --rest-as-other
+      --model-definition data/talos_params/short_test.json
