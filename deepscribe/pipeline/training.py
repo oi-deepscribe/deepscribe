@@ -8,6 +8,7 @@ import numpy as np
 import json
 from pathlib import Path
 from abc import ABC
+import os
 
 # needed to get Talos to not freak out
 import matplotlib
@@ -76,6 +77,8 @@ class TrainKerasModelFromDefinitionTask(TrainModelFromDefinitionTask):
             if self.rest_as_other
             else len(self.keep_categories)
         )
+
+        model_params["SLURM_RUN"] = os.environ.get("SLURM_JOB_ID", "NONE")
 
         return model_params
 
