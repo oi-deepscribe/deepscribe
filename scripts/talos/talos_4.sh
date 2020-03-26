@@ -5,8 +5,8 @@
 #SBATCH --gres=gpu:1     # Request 1 GPU
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user=eddiecwilliams@gmail.com
-#SBATCH --output=top-50-other-talos-%j.out
-#SBATCH --error=top-50-other-talos-%j.err
+#SBATCH --output=4-talos-%j.out
+#SBATCH --error=4-talos-%j.err
 #SBATCH --mem=16G
 
 module load cuda/9.1
@@ -20,4 +20,5 @@ luigi --module deepscribe.pipeline.training RunTalosScanTask --local-scheduler \
       --target-size 50 \
       --keep-categories $SIGNS  \
       --fractions '[0.7, 0.1, 0.2]' \
+      --subsample 1 \
       --model-definition data/talos_params/short_test.json
