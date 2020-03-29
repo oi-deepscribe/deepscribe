@@ -136,7 +136,7 @@ class VGG16Transfer(CNNAugment):
 
         x = kr.layers.Dropout(params["dropout"])(x)
 
-        x = kr.layers.Dense(params["dense_1"], activation=params["activation"])(x)
+        x = kr.layers.Dense(params["dense_size"], activation=params["activation"])(x)
         predictions = kr.layers.Dense(params["num_classes"], activation="softmax")(x)
 
         # freeze layers
