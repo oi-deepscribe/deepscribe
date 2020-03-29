@@ -10,8 +10,8 @@
 "activation": "relu",
 "pool2_size": 3,
 "pool2_stride": 1,
-"dense_size": 128,
+"dense_size": 512,
 "batch_size":  32,
-"epochs": 128,
+"epochs": 512,
 "transfer_from": "vgg16",
 "optimizer": "adam"}
