@@ -8,6 +8,7 @@ import tensorflow.keras as kr
 import tensorflow as tf
 import matplotlib
 from pathlib import Path
+import json
 
 matplotlib.use("Agg")
 # import matplotlib.backends.backend_pdf
@@ -70,8 +71,15 @@ class PlotConfusionMatrixTask(luigi.Task):
 
         # make predictions on data
 
+        with open(self.model_definition, "r") as modelf:
+            model_params = json.load(modelf)
+
         # (batch_size, num_classes)
-        pred_logits = model.predict(data["test_imgs"])
+        pred_logits = model.predict(
+            np.repeat(data["train_imgs"], 3, axis=3)
+            if "transfer_from" in model_params
+            else data["train_imgs"]
+        )
 
         # computing predicted labels
         pred_labels = np.argmax(pred_logits, axis=1)
@@ -162,8 +170,19 @@ class GenerateClassificationReportTask(luigi.Task):
 
         # make predictions on data
 
+        # load model description, check if it's being transferred from an RGB model
+
+        # TODO: better way of saving and loading models and handling this edge case
+
+        with open(self.model_definition, "r") as modelf:
+            model_params = json.load(modelf)
+
         # (batch_size, num_classes)
-        pred_logits = model.predict(data["test_imgs"])
+        pred_logits = model.predict(
+            np.repeat(data["train_imgs"], 3, axis=3)
+            if "transfer_from" in model_params
+            else data["train_imgs"]
+        )
 
         # computing predicted labels
         pred_labels = np.argmax(pred_logits, axis=1)
@@ -242,11 +261,15 @@ class PlotIncorrectTask(luigi.Task):
         model = kr.models.load_model(self.input()["model"].path)
         data = np.load(self.input()["dataset"].path)
 
-        # make predictions on data
+        with open(self.model_definition, "r") as modelf:
+            model_params = json.load(modelf)
 
         # (batch_size, num_classes)
-        pred_logits = model.predict(data["test_imgs"])
-
+        pred_logits = model.predict(
+            np.repeat(data["train_imgs"], 3, axis=3)
+            if "transfer_from" in model_params
+            else data["train_imgs"]
+        )
         # (batch_size,)
 
         pred_labels = np.argmax(pred_logits, axis=1)
