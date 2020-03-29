@@ -5,8 +5,8 @@
 #SBATCH --gres=gpu:1     # Request 1 GPU
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user=eddiecwilliams@gmail.com
-#SBATCH --output=confusion-4-%j.out
-#SBATCH --error=confusion-4-%j.err
+#SBATCH --output=confusion-4-vgg16-%j.out
+#SBATCH --error=confusion-4-vgg16-%j.err
 #SBATCH --mem=16G
 
 module load cuda/9.1
@@ -23,4 +23,4 @@ luigi --module deepscribe.pipeline.analysis RunAnalysisOnTestDataTask --local-sc
       --target-size 50 \
       --keep-categories $SIGNS  \
       --fractions '[0.7, 0.1, 0.2]' \
-      --model-definition data/model_defs/transfer.json
+      --model-definition data/model_defs/vgg16.json
