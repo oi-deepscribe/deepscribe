@@ -44,17 +44,19 @@ class TrainModelFromDefinitionTask(luigi.Task, ABC):
     epsilon = luigi.FloatParameter(default=0.1)
 
     def requires(self):
-        return SelectDatasetTask(
-            self.imgfolder,
-            self.hdffolder,
-            self.target_size,
-            self.keep_categories,
-            self.fractions,
-            self.sigma,
-            self.rest_as_other,
-            self.whiten,
-            self.epsilon,
-            self.threshold,
+        return (
+            SelectDatasetTask(
+                self.imgfolder,
+                self.hdffolder,
+                self.target_size,
+                self.keep_categories,
+                self.fractions,
+                self.sigma,
+                self.threshold,
+                self.rest_as_other,
+                self.whiten,
+                self.epsilon,
+            ),
         )
 
     def load_def(self):

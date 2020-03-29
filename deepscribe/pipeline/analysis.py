@@ -3,6 +3,7 @@ from .training import TrainKerasModelFromDefinitionTask
 from .selection import SelectDatasetTask
 from sklearn.metrics import confusion_matrix, classification_report
 import numpy as np
+from abc import ABC
 import os
 import tensorflow.keras as kr
 import tensorflow as tf
@@ -15,8 +16,12 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
 
-# produces confusion matrix from test dat
-class PlotConfusionMatrixTask(luigi.Task):
+class AnalysisTask(luigi.Task, ABC):
+    """
+    Abstract class that requires the completion of dataset selection and model training.
+
+    """
+
     imgfolder = luigi.Parameter()
     hdffolder = luigi.Parameter()
     modelsfolder = luigi.Parameter()
@@ -62,6 +67,9 @@ class PlotConfusionMatrixTask(luigi.Task):
             ),
         }
 
+
+# produces confusion matrix from test dat
+class PlotConfusionMatrixTask(AnalysisTask):
     def run(self):
         # load matrix
 
@@ -117,52 +125,7 @@ class PlotConfusionMatrixTask(luigi.Task):
         )
 
 
-class GenerateClassificationReportTask(luigi.Task):
-    imgfolder = luigi.Parameter()
-    hdffolder = luigi.Parameter()
-    modelsfolder = luigi.Parameter()
-    target_size = luigi.IntParameter()  # standardizing to square images
-    keep_categories = luigi.ListParameter()
-    fractions = luigi.ListParameter()  # train/valid/test fraction
-    model_definition = luigi.Parameter()  # JSON file with model definition specs
-    sigma = luigi.FloatParameter(default=0.5)
-    threshold = luigi.BoolParameter(default=False)
-    rest_as_other = luigi.BoolParameter(
-        default=False
-    )  # set the remaining as "other" - not recommended for small keep_category lengths
-    whiten = luigi.BoolParameter(default=False)
-    epsilon = luigi.FloatParameter(default=0.1)
-
-    def requires(self):
-        return {
-            "model": TrainKerasModelFromDefinitionTask(
-                self.imgfolder,
-                self.hdffolder,
-                self.modelsfolder,
-                self.target_size,
-                self.keep_categories,
-                self.fractions,
-                self.model_definition,
-                self.sigma,
-                self.threshold,
-                self.rest_as_other,
-                self.whiten,
-                self.epsilon,
-            ),
-            "dataset": SelectDatasetTask(
-                self.imgfolder,
-                self.hdffolder,
-                self.target_size,
-                self.keep_categories,
-                self.fractions,
-                self.sigma,
-                self.threshold,
-                self.rest_as_other,
-                self.whiten,
-                self.epsilon,
-            ),
-        }
-
+class GenerateClassificationReportTask(AnalysisTask):
     def run(self):
         # load TF model and dataset
         model = kr.models.load_model(self.input()["model"].path)
@@ -209,52 +172,7 @@ class GenerateClassificationReportTask(luigi.Task):
 
 
 # plots a random sample of 16 incorrect images from test..
-class PlotIncorrectTask(luigi.Task):
-    imgfolder = luigi.Parameter()
-    hdffolder = luigi.Parameter()
-    modelsfolder = luigi.Parameter()
-    target_size = luigi.IntParameter()  # standardizing to square images
-    keep_categories = luigi.ListParameter()
-    fractions = luigi.ListParameter()  # train/valid/test fraction
-    model_definition = luigi.Parameter()  # JSON file with model definition specs
-    sigma = luigi.FloatParameter(default=0.5)
-    threshold = luigi.BoolParameter(default=False)
-    rest_as_other = luigi.BoolParameter(
-        default=False
-    )  # set the remaining as "other" - not recommended for small keep_category lengths
-    whiten = luigi.BoolParameter(default=False)
-    epsilon = luigi.FloatParameter(default=0.1)
-
-    def requires(self):
-        return {
-            "model": TrainKerasModelFromDefinitionTask(
-                self.imgfolder,
-                self.hdffolder,
-                self.modelsfolder,
-                self.target_size,
-                self.keep_categories,
-                self.fractions,
-                self.model_definition,
-                self.sigma,
-                self.threshold,
-                self.rest_as_other,
-                self.whiten,
-                self.epsilon,
-            ),
-            "dataset": SelectDatasetTask(
-                self.imgfolder,
-                self.hdffolder,
-                self.target_size,
-                self.keep_categories,
-                self.fractions,
-                self.sigma,
-                self.threshold,
-                self.rest_as_other,
-                self.whiten,
-                self.epsilon,
-            ),
-        }
-
+class PlotIncorrectTask(AnalysisTask):
     def run(self):
 
         # load TF model and dataset
