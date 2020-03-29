@@ -22,4 +22,4 @@
 "epochs": 128,
 "dropout": 0.5,
 "activation": "relu",
-"optimizer": "adam",}
+"optimizer": "adam"}

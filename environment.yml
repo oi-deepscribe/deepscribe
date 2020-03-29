@@ -6,7 +6,6 @@ dependencies:
   - numpy
   - matplotlib
   - pillow
-  - keras
   - pip
   - tensorflow-gpu==1.14
   - tqdm
@@ -14,7 +13,8 @@ dependencies:
   - scikit-learn
   - nb_conda
   - opencv
-  - h5py
+  - freetype
+  - h5py==2.10
   - luigi
   - pip:
       - talos

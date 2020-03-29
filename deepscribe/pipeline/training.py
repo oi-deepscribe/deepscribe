@@ -4,6 +4,7 @@
 import luigi
 from deepscribe.pipeline.selection import SelectDatasetTask
 from deepscribe.models.baselines import cnn_classifier_2conv, cnn_classifier_4conv
+from deepscribe.models.cnn import VGG16Transfer
 import numpy as np
 import json
 from pathlib import Path
@@ -93,6 +94,14 @@ class TrainKerasModelFromDefinitionTask(TrainModelFromDefinitionTask):
                 data["valid_labels"],
                 model_params,
             )
+        elif "transfer_from" in model_params:
+            _, model = VGG16Transfer()(
+                data["train_imgs"],
+                data["train_labels"],  # using sparse categorical cross-entropy
+                data["valid_imgs"],
+                data["valid_labels"],
+                model_params,
+            )
         else:
             _, model = cnn_classifier_2conv(
                 data["train_imgs"],
@@ -122,7 +131,6 @@ class RunTalosScanTask(TrainModelFromDefinitionTask):
 
         # set the number of classes here
 
-        # load data
         talos_params["num_classes"] = [
             len(self.keep_categories) + 1
             if self.rest_as_other
