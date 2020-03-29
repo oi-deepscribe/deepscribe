@@ -194,7 +194,11 @@ class VGG19Transfer(CNNAugment):
 
         x = kr.layers.Dropout(params["dropout"])(x)
 
-        x = kr.layers.Dense(params["dense_size"], activation=params["activation"])(x)
+        for i in range(params["n_dense"]):
+            x = kr.layers.Dense(params["dense_size"], activation=params["activation"])(
+                x
+            )
+
         predictions = kr.layers.Dense(params["num_classes"], activation="softmax")(x)
 
         # freeze layers
