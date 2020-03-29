@@ -9,7 +9,7 @@ class ParameterModel(ABC):
     generic class for a model that is initialized from a parameter dictionary.
     allows modularity and code reuse when building and training the model.
 
-    As of this writing, only implements the model building and training function - no model persistance is actually
+    As of this writing, only implements the model building and training function - no model persistence is actually
     taken into account.
 
     Must implement the functions _build_model and _train_model. 
