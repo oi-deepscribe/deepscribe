@@ -76,9 +76,9 @@ class PlotConfusionMatrixTask(luigi.Task):
 
         # (batch_size, num_classes)
         pred_logits = model.predict(
-            np.repeat(data["train_imgs"], 3, axis=3)
+            np.repeat(data["test_imgs"], 3, axis=3)
             if "transfer_from" in model_params
-            else data["train_imgs"]
+            else data["test_imgs"]
         )
 
         # computing predicted labels
@@ -179,9 +179,9 @@ class GenerateClassificationReportTask(luigi.Task):
 
         # (batch_size, num_classes)
         pred_logits = model.predict(
-            np.repeat(data["train_imgs"], 3, axis=3)
+            np.repeat(data["test_imgs"], 3, axis=3)
             if "transfer_from" in model_params
-            else data["train_imgs"]
+            else data["test_imgs"]
         )
 
         # computing predicted labels
@@ -266,9 +266,9 @@ class PlotIncorrectTask(luigi.Task):
 
         # (batch_size, num_classes)
         pred_logits = model.predict(
-            np.repeat(data["train_imgs"], 3, axis=3)
+            np.repeat(data["test_imgs"], 3, axis=3)
             if "transfer_from" in model_params
-            else data["train_imgs"]
+            else data["test_imgs"]
         )
         # (batch_size,)
 
