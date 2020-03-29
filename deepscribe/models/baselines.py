@@ -15,14 +15,13 @@ def cnn_classifier_2conv(
 ) -> Tuple[kr.callbacks.History, kr.models.Model]:
     """
 
+    :param x_train: training image data, with shape [n_images, x_dim, y_dim, n_channels]
+    :param y_train: categorical variables with shape [n_images,]
+    :param x_val: validation image data, with shape [n_images, x_dim, y_dim, n_channels]
+    :param y_val: categorical variables with shape [n_images,]
+    :param model: tf.Keras model.
+    :param params: parameter dictionary.
 
-    :param x_train:
-    :param y_train:
-    :param x_val:
-    :param y_val:
-    :param params:
-    :param labels:
-    :return:
     """
 
     if "seed" in params:
@@ -134,7 +133,16 @@ def cnn_classifier_2conv(
 def cnn_classifier_4conv(
     x_train: np.array, y_train: np.array, x_val: np.array, y_val: np.array, params: Dict
 ) -> Tuple[kr.callbacks.History, kr.models.Model]:
+    """
 
+    :param x_train: training image data, with shape [n_images, x_dim, y_dim, n_channels]
+    :param y_train: categorical variables with shape [n_images,]
+    :param x_val: validation image data, with shape [n_images, x_dim, y_dim, n_channels]
+    :param y_val: categorical variables with shape [n_images,]
+    :param model: tf.Keras model.
+    :param params: parameter dictionary.
+
+    """
     model = kr.models.Sequential()
     model.add(
         kr.layers.Conv2D(

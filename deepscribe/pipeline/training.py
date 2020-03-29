@@ -20,6 +20,13 @@ import talos
 
 
 class TrainModelFromDefinitionTask(luigi.Task, ABC):
+    """
+
+    Luigi task skeleton for a task that loads parameters from a JSON file, trains a model based on those parameters,
+    and saves the model (or other results) to disk. 
+
+    """
+
     imgfolder = luigi.Parameter()
     hdffolder = luigi.Parameter()
     modelsfolder = luigi.Parameter()
@@ -51,10 +58,21 @@ class TrainModelFromDefinitionTask(luigi.Task, ABC):
         )
 
     def load_def(self):
+        """
+
+        Loads and preprocesses the model definition JSON file.
+
+        """
         # loads model definition
         raise NotImplementedError
 
     def run_training(self, model_params: dict):
+        """
+
+        Executes model training and saves result to disk.
+
+        :param model_params: dictionary containing model parameter information.
+        """
         raise NotImplementedError
 
     def run(self):
@@ -67,6 +85,12 @@ class TrainModelFromDefinitionTask(luigi.Task, ABC):
 
 
 class TrainKerasModelFromDefinitionTask(TrainModelFromDefinitionTask):
+    """
+
+    Trains a Keras model from the model_definition parameter and saves it to disk. 
+
+    """
+
     def load_def(self):
         with open(self.model_definition, "r") as modelf:
             model_params = json.load(modelf)
@@ -126,6 +150,12 @@ class TrainKerasModelFromDefinitionTask(TrainModelFromDefinitionTask):
 
 
 class RunTalosScanTask(TrainModelFromDefinitionTask):
+    """
+
+    Runs a Talos scan from the model_definition parameter (a dictionary of lists instead of single values) 
+
+    """
+
     subsample = luigi.FloatParameter(default=0.001)
 
     def load_def(self):
