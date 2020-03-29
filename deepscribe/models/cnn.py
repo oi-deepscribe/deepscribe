@@ -11,6 +11,12 @@ from .parametermodel import ParameterModel
 
 
 class CNNAugment(ParameterModel, ABC):
+    """
+
+    Subclass of ParameterModel that trains a CNN image classification network with a data augmentation routine.
+
+    """
+
     def _train_model(
         self,
         x_train: np.array,
@@ -70,6 +76,12 @@ class CNNAugment(ParameterModel, ABC):
 
 
 class CNN2Conv(CNNAugment):
+    """
+
+    Subclass of CNNAugment that implements a 2-layer CNN model.
+
+    """
+
     def _build_model(self, params: Dict) -> kr.Model:
         model = kr.models.Sequential()
         model.add(
@@ -123,6 +135,12 @@ class CNN2Conv(CNNAugment):
 
 
 class VGG16Transfer(CNNAugment):
+    """
+
+    Subclass of CNNAugment that transfers learned weights from VGG16.
+
+    """
+
     def _build_model(self, params: Dict) -> kr.Model:
 
         base_model = kr.applications.vgg16.VGG16(weights="imagenet", include_top=False)
@@ -157,6 +175,12 @@ class VGG16Transfer(CNNAugment):
 
 
 class VGG19Transfer(CNNAugment):
+    """
+
+        Subclass of CNNAugment that transfers learned weights from VGG19.
+
+        """
+
     def _build_model(self, params: Dict) -> kr.Model:
 
         base_model = kr.applications.vgg19.VGG19(weights="imagenet", include_top=False)
