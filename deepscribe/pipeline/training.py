@@ -95,10 +95,13 @@ class TrainKerasModelFromDefinitionTask(TrainModelFromDefinitionTask):
                 model_params,
             )
         elif "transfer_from" in model_params:
+
+            # TODO: build image dimension handling into the model object?
+
             _, model = VGG16Transfer()(
-                data["train_imgs"],
+                np.repeat(data["train_imgs"], 3, axis=3),  # vgg16 expects RGB
                 data["train_labels"],  # using sparse categorical cross-entropy
-                data["valid_imgs"],
+                np.repeat(data["valid_imgs"], 3, axis=3),
                 data["valid_labels"],
                 model_params,
             )
