@@ -21,4 +21,4 @@ luigi --module deepscribe.pipeline.training RunTalosScanTask --local-scheduler \
       --keep-categories $SIGNS  \
       --fractions '[0.7, 0.1, 0.2]' \
       --subsample 1 \
-      --model-definition data/talos_params/varied_knums.json
+      --model-definition data/talos_params/varied_knums_ksize.json
