@@ -5,5 +5,5 @@
 "batch_size":  32,
 "epochs": 512,
 "architecture": "vgg16",
-"transfer": true,
+"transfer": false,
 "optimizer": "adam"}

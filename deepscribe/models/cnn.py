@@ -134,7 +134,7 @@ class CNN2Conv(CNNAugment):
         return model
 
 
-class VGG16Transfer(CNNAugment):
+class VGG16(CNNAugment):
     """
 
     Subclass of CNNAugment that transfers learned weights from VGG16.
@@ -143,7 +143,10 @@ class VGG16Transfer(CNNAugment):
 
     def _build_model(self, params: Dict) -> kr.Model:
 
-        base_model = kr.applications.vgg16.VGG16(weights="imagenet", include_top=False)
+        base_model = kr.applications.vgg16.VGG16(
+            weights="imagenet" if params.get("transfer", False) else None,
+            include_top=False,
+        )
 
         x = base_model.output
 
@@ -158,8 +161,9 @@ class VGG16Transfer(CNNAugment):
         predictions = kr.layers.Dense(params["num_classes"], activation="softmax")(x)
 
         # freeze layers
-        for layer in base_model.layers:
-            layer.trainable = False
+        if params.get("transfer", False):
+            for layer in base_model.layers:
+                layer.trainable = False
 
         # TODO: set learning rate
 
@@ -174,7 +178,7 @@ class VGG16Transfer(CNNAugment):
         return model
 
 
-class VGG19Transfer(CNNAugment):
+class VGG19(CNNAugment):
     """
 
         Subclass of CNNAugment that transfers learned weights from VGG19.
@@ -183,7 +187,10 @@ class VGG19Transfer(CNNAugment):
 
     def _build_model(self, params: Dict) -> kr.Model:
 
-        base_model = kr.applications.vgg19.VGG19(weights="imagenet", include_top=False)
+        base_model = kr.applications.vgg19.VGG19(
+            weights="imagenet" if params.get("transfer", False) else None,
+            include_top=False,
+        )
 
         x = base_model.output
 
@@ -201,9 +208,10 @@ class VGG19Transfer(CNNAugment):
 
         predictions = kr.layers.Dense(params["num_classes"], activation="softmax")(x)
 
-        # freeze layers
-        for layer in base_model.layers:
-            layer.trainable = False
+        # freeze layers if transferring fixed weights
+        if params.get("transfer", False):
+            for layer in base_model.layers:
+                layer.trainable = False
 
         # TODO: set learning rate
 

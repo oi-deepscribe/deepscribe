@@ -4,7 +4,7 @@
 import luigi
 from deepscribe.pipeline.selection import SelectDatasetTask
 from deepscribe.models.baselines import cnn_classifier_2conv, cnn_classifier_4conv
-from deepscribe.models.cnn import VGG16Transfer
+from deepscribe.models.cnn import VGG16, VGG19
 import numpy as np
 import json
 from pathlib import Path
@@ -118,12 +118,23 @@ class TrainKerasModelFromDefinitionTask(TrainModelFromDefinitionTask):
                 data["valid_labels"],
                 model_params,
             )
-        elif "transfer_from" in model_params:
+        elif "architecture" in model_params and model_params["architecture"] == "vgg16":
 
             # TODO: build image dimension handling into the model object?
 
-            _, model = VGG16Transfer()(
+            _, model = VGG16()(
                 np.repeat(data["train_imgs"], 3, axis=3),  # vgg16 expects RGB
+                data["train_labels"],  # using sparse categorical cross-entropy
+                np.repeat(data["valid_imgs"], 3, axis=3),
+                data["valid_labels"],
+                model_params,
+            )
+        elif "architecture" in model_params and model_params["architecture"] == "vgg19":
+
+            # TODO: build image dimension handling into the model object?
+
+            _, model = VGG19()(
+                np.repeat(data["train_imgs"], 3, axis=3),  # vgg19 expects RGB
                 data["train_labels"],  # using sparse categorical cross-entropy
                 np.repeat(data["valid_imgs"], 3, axis=3),
                 data["valid_labels"],
