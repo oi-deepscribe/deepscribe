@@ -5,8 +5,8 @@
 #SBATCH --gres=gpu:1     # Request 1 GPU
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user=eddiecwilliams@gmail.com
-#SBATCH --output=confusion-4-vgg16-%j.out
-#SBATCH --error=confusion-4-vgg16-%j.err
+#SBATCH --output=slogs/confusion-4-resnet-%j.out
+#SBATCH --error=slogs/confusion-4-resnet-%j.err
 #SBATCH --mem=16G
 
 module load cuda/9.1
