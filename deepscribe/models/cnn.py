@@ -224,3 +224,50 @@ class VGG19(CNNAugment):
         )
 
         return model
+
+
+class ResNet50(CNNAugment):
+    """
+    Subclass of CNNAugment using architecture from ResNet50
+
+    """
+
+    def _build_model(self, params: Dict) -> kr.Model:
+
+        base_model = kr.applications.resnet50.ResNet50(
+            weights="imagenet" if params.get("transfer", False) else None,
+            include_top=False,
+        )
+
+        x = base_model.output
+
+        # TODO: freeze dynamic number of layers based on config file
+
+        x = kr.layers.GlobalAveragePooling2D()(x)
+        # let's add a fully-connected layer
+
+        x = kr.layers.Dropout(params["dropout"])(x)
+
+        for i in range(params["n_dense"]):
+            x = kr.layers.Dense(params["dense_size"], activation=params["activation"])(
+                x
+            )
+
+        predictions = kr.layers.Dense(params["num_classes"], activation="softmax")(x)
+
+        # freeze layers if transferring fixed weights
+        if params.get("transfer", False):
+            for layer in base_model.layers:
+                layer.trainable = False
+
+        # TODO: set learning rate
+
+        model = kr.Model(inputs=base_model.input, outputs=predictions)
+
+        model.compile(
+            optimizer=params["optimizer"],
+            loss="sparse_categorical_crossentropy",
+            metrics=["acc", kr.metrics.TopKCategoricalAccuracy(k=params.get("k", 3))],
+        )
+
+        return model
