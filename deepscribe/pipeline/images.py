@@ -8,14 +8,18 @@ from tqdm import tqdm
 from deepscribe.pipeline.aggregation import OchreToHD5Task
 from sklearn.preprocessing import StandardScaler
 from skimage.util import random_noise
+from abc import ABC
 from scipy.ndimage import gaussian_filter
 import numpy as np
 from typing import List
 
 
-class ProcessImageTask(luigi.Task):
+class ProcessImageTask(luigi.Task, ABC):
     """
     Task mapping an hdf5 archive of images to another after applying an image processing function.
+    
+    Requires implementation of the process_image function.
+
     """
 
     imgfolder = luigi.Parameter()
@@ -73,6 +77,12 @@ class ProcessImageTask(luigi.Task):
 
 # subtracting out the mean brightness
 class RescaleImageValuesTask(ProcessImageTask):
+    """
+
+    Subtracts out the mean brightness from each image.
+
+    """
+
     # location of image folder
     imgfolder = luigi.Parameter()
     hdffolder = luigi.Parameter()
@@ -110,6 +120,11 @@ class ThresholdImageTask(ProcessImageTask):
 
 
 class StandardizeImageSizeTask(ProcessImageTask):
+    """
+    Resizes and pads an image to a square with the provided dimension.
+
+    """
+
     # location of image folder
     imgfolder = luigi.Parameter()
     hdffolder = luigi.Parameter()
