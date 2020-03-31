@@ -7,7 +7,7 @@ dependencies:
   - matplotlib
   - pillow
   - pip
-  - tensorflow-gpu==1.14
+  - tensorflow-gpu=2.1
   - tqdm
   - scikit-image
   - scikit-learn
