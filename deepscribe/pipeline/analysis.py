@@ -85,7 +85,7 @@ class PlotConfusionMatrixTask(AnalysisTask):
         # (batch_size, num_classes)
         pred_logits = model.predict(
             np.repeat(data["test_imgs"], 3, axis=3)
-            if "transfer_from" in model_params
+            if model_params.get("transfer", False)
             else data["test_imgs"]
         )
 
@@ -143,7 +143,7 @@ class GenerateClassificationReportTask(AnalysisTask):
         # (batch_size, num_classes)
         pred_logits = model.predict(
             np.repeat(data["test_imgs"], 3, axis=3)
-            if "transfer_from" in model_params
+            if model_params.get("transfer", False)
             else data["test_imgs"]
         )
 
@@ -185,7 +185,7 @@ class PlotIncorrectTask(AnalysisTask):
         # (batch_size, num_classes)
         pred_logits = model.predict(
             np.repeat(data["test_imgs"], 3, axis=3)
-            if "transfer_from" in model_params
+            if model_params.get("transfer", False)
             else data["test_imgs"]
         )
         # (batch_size,)
