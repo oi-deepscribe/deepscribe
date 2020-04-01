@@ -4,7 +4,7 @@
 import luigi
 from deepscribe.pipeline.selection import SelectDatasetTask
 from deepscribe.models.baselines import cnn_classifier_2conv, cnn_classifier_4conv
-from deepscribe.models.cnn import VGG16, VGG19, ResNet50
+from deepscribe.models.cnn import VGG16, VGG19, ResNet50, ResNet50V2
 import numpy as np
 import json
 from pathlib import Path
@@ -146,6 +146,18 @@ class TrainKerasModelFromDefinitionTask(TrainModelFromDefinitionTask):
             and model_params["architecture"] == "resnet50"
         ):
             _, model = ResNet50()(
+                np.repeat(data["train_imgs"], 3, axis=3),  # resnet expects RGB
+                data["train_labels"],  # using sparse categorical cross-entropy
+                np.repeat(data["valid_imgs"], 3, axis=3),
+                data["valid_labels"],
+                model_params,
+            )
+
+        elif (
+            "architecture" in model_params
+            and model_params["architecture"] == "resnet50v2"
+        ):
+            _, model = ResNet50V2()(
                 np.repeat(data["train_imgs"], 3, axis=3),  # resnet expects RGB
                 data["train_labels"],  # using sparse categorical cross-entropy
                 np.repeat(data["valid_imgs"], 3, axis=3),
