@@ -17,5 +17,5 @@ dependencies:
   - h5py==2.10
   - luigi
   - pip:
-      - talos
+      - git+https://github.com/autonomio/talos@1.0
       - wandb
