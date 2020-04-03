@@ -3,7 +3,7 @@
 "n_dense": 3,
 "dropout": 0.5,
 "batch_size":  32,
-"epochs": 512,
+"epochs": 1024,
 "architecture": "resnet50",
 "transfer": false,
 "shear": 10,
