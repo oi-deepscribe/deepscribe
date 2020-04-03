@@ -1,7 +1,8 @@
 #!/bin/bash
 
 #SBATCH --partition=gpu2 # GPU2 partition
-#SBATCH --ntasks=1       # 1 CPU core to drive GPU
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=3 #requesting 3 CPUs
 #SBATCH --gres=gpu:1     # Request 1 GPU
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user=eddiecwilliams@gmail.com
@@ -16,12 +17,12 @@ SIGNS='["na","HAL","iš","MEŠ"]'
 #SIGNS='["na","HAL","iš","MEŠ","ma","1","du","da","AN","AŠ"]'
 
 
-luigi --module deepscribe.luigi.model_selection RunAnalysisOnTestDataTask --local-scheduler \
+luigi --module deepscribe.pipeline.analysis RunAnalysisOnTestDataTask --local-scheduler \
       --imgfolder data/ochre/a_pfa \
       --hdffolder ../deepscribe-data/processed/pfa_new \
       --modelsfolder models \
       --target-size 50 \
       --keep-categories $SIGNS  \
       --fractions '[0.7, 0.1, 0.2]' \
-      --model-definition data/model_defs/alexnet-small.json \
-      --k 1
+      --model-definition data/model_defs/alexnet-small-earlystopping-10.json \
+      --whiten

@@ -5,17 +5,18 @@
 #SBATCH --gres=gpu:1     # Request 1 GPU
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user=eddiecwilliams@gmail.com
-#SBATCH --output=confusion-50-other-%j.out
-#SBATCH --error=confusion-50-other-%j.err
+#SBATCH --output=confusion-10-%j.out
+#SBATCH --error=confusion-10-%j.err
 #SBATCH --mem=16G
 
 module load cuda/9.1
 
-SIGNS='["na","HAL","iš","MEŠ","ma","1","du","da","AN","AŠ","ka₄","kur","2","ba","ra","šá","be","20","3","SAL","ul","ITI","ia","KI","MIN","hu","man","QA","me","mi","ti","um","m°n","ha","10","taš","ak","ri","BAR","4","gal","pu","ku","ir","mar","ip","´","ki","an","5"]'
+SIGNS='["na","HAL","iš","MEŠ","ma","1","du","da","AN","AŠ"]'
+#SIGNS='["na","HAL"]'
+#SIGNS='["na","HAL","iš","MEŠ","ma","1","du","da","AN","AŠ"]'
 
 
-
-luigi --module deepscribe.luigi.model_selection RunAnalysisOnTestDataTask --local-scheduler \
+luigi --module deepscribe.pipeline.analysis RunAnalysisOnTestDataTask --local-scheduler \
       --imgfolder data/ochre/a_pfa \
       --hdffolder ../deepscribe-data/processed/pfa_new \
       --modelsfolder models \
@@ -23,5 +24,4 @@ luigi --module deepscribe.luigi.model_selection RunAnalysisOnTestDataTask --loca
       --keep-categories $SIGNS  \
       --fractions '[0.7, 0.1, 0.2]' \
       --model-definition data/model_defs/alexnet-small.json \
-      --num-augment 0 \
-      --rest-as-other
+      --k 2
