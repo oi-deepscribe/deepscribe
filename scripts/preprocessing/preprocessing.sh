@@ -1,9 +1,13 @@
 #!/bin/bash
 
-luigi --module deepscribe.luigi.ml_input AssignDatasetTask --local-scheduler \
-      --imgfolder data/ochre/a_pfa \
-      --hdffolder data/processed/pfa_new \
+
+SIGNS='["na","HAL","iš","MEŠ"]'
+#SIGNS='["na","HAL","iš","MEŠ","ma","1","du","da","AN","AŠ"]'
+
+luigi --module deepscribe.pipeline.selection SelectDatasetTask --local-scheduler \
+      --imgfolder ../deepscribe-data/ochre/a_pfa \
+      --hdffolder ../deepscribe-data/processed/pfa_new \
       --target-size 50 \
-      --keep-categories '["na", "HAL"]'  \
+      --keep-categories $SIGNS \
       --fractions '[0.7, 0.1, 0.2]' \
-      --num-augment 10 \
+      --sigma 0.5

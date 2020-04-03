@@ -6,15 +6,16 @@ dependencies:
   - numpy
   - matplotlib
   - pillow
-  - keras
   - pip
-  - tensorflow-gpu==1.14
+  - tensorflow-gpu=2.1
   - tqdm
   - scikit-image
   - scikit-learn
+  - nb_conda
   - opencv
-  - h5py
+  - freetype
+  - h5py==2.10
   - luigi
   - pip:
-      - talos
+      - git+https://github.com/autonomio/talos@1.0
       - wandb

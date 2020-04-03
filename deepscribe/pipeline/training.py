@@ -2,19 +2,14 @@
 #
 
 import luigi
-import tensorflow.keras as kr
-import os
-from deepscribe.pipeline.selection import AssignDatasetTask
-from deepscribe.models.baselines import cnn_classifier_2conv
+from deepscribe.pipeline.selection import SelectDatasetTask
+from deepscribe.models.baselines import cnn_classifier_2conv, cnn_classifier_4conv
+from deepscribe.models.cnn import VGG16, VGG19, ResNet50, ResNet50V2
 import numpy as np
 import json
 from pathlib import Path
-import sklearn as sk
-import sklearn.metrics
-import sklearn.linear_model
-import sklearn.neighbors
-import sklearn.ensemble
-import pickle as pk
+from abc import ABC
+import os
 
 # needed to get Talos to not freak out
 import matplotlib
@@ -23,9 +18,15 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import talos
 
-# TODO: merge this model training class with the talos definitions class and scikit-learn definitions with an abstract
-# class
-class TrainKerasModelFromDefinitionTask(luigi.Task):
+
+class TrainModelFromDefinitionTask(luigi.Task, ABC):
+    """
+
+    Luigi task skeleton for a task that loads parameters from a JSON file, trains a model based on those parameters,
+    and saves the model (or other results) to disk. 
+
+    """
+
     imgfolder = luigi.Parameter()
     hdffolder = luigi.Parameter()
     modelsfolder = luigi.Parameter()
@@ -33,27 +34,73 @@ class TrainKerasModelFromDefinitionTask(luigi.Task):
     keep_categories = luigi.ListParameter()
     fractions = luigi.ListParameter()  # train/valid/test fraction
     model_definition = luigi.Parameter()  # JSON file with model definition specs
-    num_augment = luigi.IntParameter(default=0)
+    sigma = luigi.FloatParameter(default=0.5)
+    threshold = luigi.BoolParameter(default=False)
+
     rest_as_other = luigi.BoolParameter(
         default=False
     )  # set the remaining as "other" - not recommended for small keep_category lengths
+    whiten = luigi.BoolParameter(default=False)
+    epsilon = luigi.FloatParameter(default=0.1)
 
     def requires(self):
-        return AssignDatasetTask(
+        """
+
+        :return: SelectDatasetTask
+        """
+        return SelectDatasetTask(
             self.imgfolder,
             self.hdffolder,
             self.target_size,
             self.keep_categories,
             self.fractions,
-            self.num_augment,
+            self.sigma,
+            self.threshold,
             self.rest_as_other,
+            self.whiten,
+            self.epsilon,
         )
 
+    def load_def(self):
+        """
+
+        Loads and preprocesses the model definition JSON file.
+
+        """
+        # loads model definition
+        raise NotImplementedError
+
+    def run_training(self, model_params: dict):
+        """
+
+        Executes model training and saves result to disk.
+
+        :param model_params: dictionary containing model parameter information.
+        """
+        raise NotImplementedError
+
     def run(self):
+        """
+        Creates output directories, load model definition, run training
+
+        :return:
+        """
 
         self.output().makedirs()
 
-        # load model definition
+        model_def = self.load_def()
+
+        self.run_training(model_def)
+
+
+class TrainKerasModelFromDefinitionTask(TrainModelFromDefinitionTask):
+    """
+
+    Trains a Keras model from the model_definition parameter and saves it to disk. 
+
+    """
+
+    def load_def(self):
         with open(self.model_definition, "r") as modelf:
             model_params = json.load(modelf)
 
@@ -65,25 +112,95 @@ class TrainKerasModelFromDefinitionTask(luigi.Task):
             else len(self.keep_categories)
         )
 
-        # load data
-        #
+        model_params["SLURM_RUN"] = os.environ.get("SLURM_JOB_ID", "NONE")
+
+        return model_params
+
+    def run_training(self, model_params: dict):
+        """
+        Selects model class from params dictionary and runs training.
+
+        :param model_params: dict
+        :return: None
+        """
+
         data = np.load(self.input().path)
 
-        # converting to one-hot
+        if "conv4_kernels" in model_params:
+            _, model = cnn_classifier_4conv(
+                data["train_imgs"],
+                data["train_labels"],  # using sparse categorical cross-entropy
+                data["valid_imgs"],
+                data["valid_labels"],
+                model_params,
+            )
+        elif "architecture" in model_params and model_params["architecture"] == "vgg16":
 
-        _, model = cnn_classifier_2conv(
-            data["train_imgs"],
-            kr.utils.to_categorical(data["train_labels"]),
-            data["valid_imgs"],
-            kr.utils.to_categorical(data["valid_labels"]),
-            model_params,
-            data["classes"],
-        )
+            # TODO: build image dimension handling into the model object?
 
+            _, model = VGG16()(
+                np.repeat(data["train_imgs"], 3, axis=3),  # vgg16 expects RGB
+                data["train_labels"],  # using sparse categorical cross-entropy
+                np.repeat(data["valid_imgs"], 3, axis=3),
+                data["valid_labels"],
+                model_params,
+            )
+        elif "architecture" in model_params and model_params["architecture"] == "vgg19":
+
+            # TODO: build image dimension handling into the model object?
+
+            _, model = VGG19()(
+                np.repeat(data["train_imgs"], 3, axis=3),  # vgg19 expects RGB
+                data["train_labels"],  # using sparse categorical cross-entropy
+                np.repeat(data["valid_imgs"], 3, axis=3),
+                data["valid_labels"],
+                model_params,
+            )
+
+        elif (
+            "architecture" in model_params
+            and model_params["architecture"] == "resnet50"
+        ):
+            _, model = ResNet50()(
+                np.repeat(data["train_imgs"], 3, axis=3),  # resnet expects RGB
+                data["train_labels"],  # using sparse categorical cross-entropy
+                np.repeat(data["valid_imgs"], 3, axis=3),
+                data["valid_labels"],
+                model_params,
+            )
+
+        elif (
+            "architecture" in model_params
+            and model_params["architecture"] == "resnet50v2"
+        ):
+            _, model = ResNet50V2()(
+                np.repeat(data["train_imgs"], 3, axis=3),  # resnet expects RGB
+                data["train_labels"],  # using sparse categorical cross-entropy
+                np.repeat(data["valid_imgs"], 3, axis=3),
+                data["valid_labels"],
+                model_params,
+            )
+
+        else:
+            _, model = cnn_classifier_2conv(
+                data["train_imgs"],
+                data["train_labels"],  # using sparse categorical cross-entropy
+                data["valid_imgs"],
+                data["valid_labels"],
+                model_params,
+            )
         # save model for serialization
         model.save(self.output().path)
 
     def output(self):
+
+        """
+
+        Output location of trained Keras model in HDF5 format.
+
+        :return: luigi.LocalTarget
+        """
+
         p = Path(self.model_definition)
         p_data = Path(self.input().path)
 
@@ -92,67 +209,41 @@ class TrainKerasModelFromDefinitionTask(luigi.Task):
         )
 
 
-class RunTalosScanTask(luigi.Task):
-    imgfolder = luigi.Parameter()
-    hdffolder = luigi.Parameter()
-    modelsfolder = luigi.Parameter()
-    target_size = luigi.IntParameter()  # standardizing to square images
-    keep_categories = luigi.ListParameter()
-    fractions = luigi.ListParameter()  # train/valid/test fraction
-    talos_params = luigi.Parameter()  # JSON file with model definition specs
-    nepoch = luigi.IntParameter(default=64)
-    subsample = luigi.FloatParameter(default=1.0)
-    num_augment = luigi.IntParameter(default=0)
-    rest_as_other = luigi.BoolParameter(
-        default=False
-    )  # set the remaining as "other" - not recommended for small keep_category lengths
+class RunTalosScanTask(TrainModelFromDefinitionTask):
+    """
 
-    def requires(self):
-        return AssignDatasetTask(
-            self.imgfolder,
-            self.hdffolder,
-            self.target_size,
-            self.keep_categories,
-            self.fractions,
-            self.num_augment,
-            self.rest_as_other,
-        )
+    Runs a Talos scan from the model_definition parameter (a dictionary of lists instead of single values) 
 
-    def run(self):
+    """
 
-        self.output().makedirs()
+    subsample = luigi.FloatParameter(default=0.001)
 
-        # load talos parameters
-        with open(self.talos_params, "r") as modelf:
+    def load_def(self):
+        with open(self.model_definition, "r") as modelf:
             talos_params = json.load(modelf)
 
         # set the number of classes here
 
-        p = Path(self.talos_params)
-
-        # load data
         talos_params["num_classes"] = [
             len(self.keep_categories) + 1
             if self.rest_as_other
             else len(self.keep_categories)
         ]
 
-        # adding the number of epochs as a command line argument
-        talos_params["epochs"] = [self.nepoch]
+        return talos_params
 
-        # load data
-        #
+    def run_training(self, model_params: dict):
         data = np.load(self.input().path)
 
         scan_object = talos.Scan(
             data["train_imgs"],
-            kr.utils.to_categorical(data["train_labels"]),
+            data["train_labels"],
             x_val=data["valid_imgs"],
-            y_val=kr.utils.to_categorical(data["valid_labels"]),
-            model=cnn_classifier_2conv,  # TODO: update this with new type signature
-            params=talos_params,
+            y_val=data["valid_labels"],
+            model=cnn_classifier_2conv,
+            params=model_params,
             fraction_limit=self.subsample,
-            experiment_name=p.stem,
+            experiment_name=Path(self.model_definition).stem,
         )
 
         # save DataFrame as CSV
@@ -160,152 +251,16 @@ class RunTalosScanTask(luigi.Task):
         scan_object.data.to_pickle(self.output().path)
 
     def output(self):
+        """
 
-        p = Path(self.talos_params)
+        Pickled Talos Scan object.
 
-        return luigi.LocalTarget(
-            "{}/talos/{}_talos_{}_epoch_subsampled_{}.pkl".format(
-                self.modelsfolder, p.stem, self.nepoch, self.subsample
-            )
-        )
+        :return: luigi.LocalTarget
+        """
 
-
-# abstract task, overriden
-class TrainSKLModelFromDefinitionTask(luigi.Task):
-    imgfolder = luigi.Parameter()
-    hdffolder = luigi.Parameter()
-    modelsfolder = luigi.Parameter()
-    target_size = luigi.IntParameter()  # standardizing to square images
-    keep_categories = luigi.ListParameter()
-    fractions = luigi.ListParameter()  # train/valid/test fraction
-    model_definition = luigi.Parameter()  # JSON file with model definition specs
-
-    def requires(self):
-        return AssignDatasetTask(
-            self.imgfolder,
-            self.hdffolder,
-            self.target_size,
-            self.keep_categories,
-            self.fractions,
-        )
-
-    def get_model(self):
-        raise NotImplementedError
-
-    def run(self):
-
-        self.output().makedirs()
-
-        data = np.load(self.input().path)
-
-        input_x = data["train_imgs"]
-
-        # reshape data for input to sklearn classifier
-
-        n_examples = input_x.shape[0]
-
-        vector_dim = input_x.shape[1] * input_x.shape[2] * input_x.shape[3]
-
-        input_x_flattened = input_x.reshape(n_examples, vector_dim)
-        # TODO: set terms from input file
-        model = self.get_model()
-
-        model.fit(input_x_flattened, data["train_labels"])
-
-        # compute performance on validation data
-
-        # reshape
-
-        valid_x = data["valid_imgs"]
-
-        valid_x_flattened = valid_x.reshape(
-            valid_x.shape[0], valid_x.shape[1] * valid_x.shape[2] * valid_x.shape[3]
-        )
-
-        pred_valid_y = model.predict(valid_x_flattened)
-
-        acc = sk.metrics.accuracy_score(data["valid_labels"], pred_valid_y)
-
-        print("Model accuracy on validation data: {}".format(acc))
-
-        balanced_acc = sk.metrics.balanced_accuracy_score(
-            data["valid_labels"], pred_valid_y
-        )
-        print("balanced accuracy score on validation data: {}".format(balanced_acc))
-
-        # compute AUC score
-
-        # convert data to categorical
-
-        validation_onehot = kr.utils.to_categorical(data["valid_labels"])
-
-        auc_macro = sk.metrics.roc_auc_score(
-            validation_onehot, model.predict_proba(valid_x_flattened), average="macro"
-        )
-
-        print("Macro AUC on validation data: {}".format(auc_macro))
-
-        auc_micro = sk.metrics.roc_auc_score(
-            validation_onehot, model.predict_proba(valid_x_flattened), average="micro"
-        )
-
-        print("Micro AUC on validation data: {}".format(auc_micro))
-
-        f1_macro = sk.metrics.f1_score(
-            data["valid_labels"], pred_valid_y, average="macro"
-        )
-
-        print("Macro F1 on validation data: {}".format(f1_macro))
-
-        f1_micro = sk.metrics.f1_score(
-            data["valid_labels"], pred_valid_y, average="micro"
-        )
-
-        print("Micro F1 on validation data: {}".format(f1_micro))
-
-        # builtin luigi doesn't work with bytes mode?
-        with open(self.output().path, "wb") as outf:
-            pk.dump(model, outf)
-
-    def output(self):
         p = Path(self.model_definition)
         p_data = Path(self.input().path)
 
         return luigi.LocalTarget(
-            "{}/{}_{}/trained.pkl".format(self.modelsfolder, p.stem, p_data.stem)
-        )
-
-
-# trains a linear model from sklearn
-class TrainLinearModelTask(TrainSKLModelFromDefinitionTask):
-    def get_model(self):
-        return sk.linear_model.LogisticRegression(verbose=True, n_jobs=-1)
-
-
-# TODO: refactor to avoid repeated code
-class TrainKNNModelTask(TrainSKLModelFromDefinitionTask):
-    def get_model(self):
-        return sk.neighbors.KNeighborsClassifier(n_jobs=-1)
-
-
-class TrainRFModelTask(TrainSKLModelFromDefinitionTask):
-    def get_model(self):
-
-        # load model
-        with open(self.model_definition, "r") as modelf:
-            model_params = json.load(modelf)
-
-        return sk.ensemble.RandomForestClassifier(
-            verbose=1, n_jobs=-1, n_estimators=model_params["estimators"]
-        )
-
-
-class TrainGBModelTask(TrainSKLModelFromDefinitionTask):
-    def get_model(self):
-        # load model
-        with open(self.model_definition, "r") as modelf:
-            model_params = json.load(modelf)
-
-        return sk.ensemble.GradientBoostingClassifier(
-            verbose=1, n_estimators=model_params["estimators"]
+            "{}/{}_{}/talos_scan.pkl".format(self.modelsfolder, p.stem, p_data.stem)
         )

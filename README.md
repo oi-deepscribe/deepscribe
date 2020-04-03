@@ -13,40 +13,6 @@ Labeled images originate from the Persepolis Fortification Archive project, cons
 
 The majority of the `deepscribe` code base consists of Luigi workflow tasks selecting and preprocessing subsets of the image dataset, splitting them into train/test/validation sets, training ML models on the resulting images, and performing model analysis tasks. 
 
-## `deepscribe.pipeline.preprocessing`
+# Documentation
 
-- `OchreToHD5Task`: collects images with filenames in `<sign>-<image uuid>-<object uuid>` format from a provided folder and collects them in a HDF5 file. 
-
-## `deepscribe.pipeline.images`
-
-- `ProcessImageTask`: Superclass whose method `process_image` is applied to every matrix in an HDF5 file. 
-- `ImagesToGrayscaleTask`: `process_image` converts the image to a single-channel grayscale image.
-- `StandardizeImageSizeTask`: Scales and black-pads the image to a square. 
-- `RescaleImageValuesTask`: Normalizes each image. 
-- `GaussianBlurTask`: Adds gaussian blur to each 
-- `AddGaussianNoiseTask`: Adds gaussian noise to each image as a data augmentation procedure. 
-
-## `deepscribe.pipeline.selection`
-
-- `SubsampleDatasetTask`: Selects the class labels provided out of the full dataset and saves a hdf archive with the reduced dataset.
-- `AssignDatasetTask`: Randomly partitions the data into a train/test/validation split and saves as a .npz archive.
-
-## `deepscribe.pipeline.training`
-
-- `TrainKerasModelFromDefinitionTask`: Reads a JSON file containing model architecture parameters and trains the model, validating on validation split. 
-- `RunTalosScanTask`: Reads a JSON file containing ranges of architecture parameters, runs a scan with Talos. 
-- `TrainSKLModelFromDefinitionTask`: Reads a JSON file containing scikit-learn model parameters, trains model. 
-
-## `deepscribe.pipeline.analysis`
-- `TestModelTask`: Evaluates trained model on test data, saves confusion matrix to npz archive.
-- `PlotConfusionMatrixTask`: Plots confusion matrix. 
-- `GenerateClassificationReportTask`: Generates a classification report using `sklearn`. 
-- `PlotIncorrectTask`: Generates a sample of incorrectly classified images with their true labels for model analysis. 
-- `RunAnalysisOnTestDataTask`: Wrapper task performing the previous model selection tasks. 
-
-## `deepscribe.models`
- - `cnn_classifier_2conv`: CNN with two convolutional layers, inspired by AlexNet.  
- 
- #TODO
- 
- - Move documentation to Sphinx
+TODO: insert readthedocs here. 

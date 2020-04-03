@@ -8,14 +8,18 @@ from tqdm import tqdm
 from deepscribe.pipeline.aggregation import OchreToHD5Task
 from sklearn.preprocessing import StandardScaler
 from skimage.util import random_noise
+from abc import ABC
 from scipy.ndimage import gaussian_filter
 import numpy as np
 from typing import List
 
 
-class ProcessImageTask(luigi.Task):
+class ProcessImageTask(luigi.Task, ABC):
     """
     Task mapping an hdf5 archive of images to another after applying an image processing function.
+    
+    Requires implementation of the process_image function.
+
     """
 
     imgfolder = luigi.Parameter()
@@ -23,20 +27,35 @@ class ProcessImageTask(luigi.Task):
     identifier = ""  # to be set to describe image transformation
 
     def process_image(self, img):
+        """
+
+        Task mapping an image to to a transformed image.
+
+        :param img: np.ndarray
+        :return: np.ndarray
+        """
         raise NotImplementedError
 
     def run(self):
-        with self.output().temporary_path() as self.temp_output_path:
-            new_archive = h5py.File(self.temp_output_path)
+        """
 
-            original_archive = h5py.File(self.input().path)
+        Runs the process_image function on every image in the HDF5 archive, keeping the archive structure constant.
+
+        :return:
+        """
+
+        with self.output().temporary_path() as self.temp_output_path:
+            new_archive = h5py.File(self.temp_output_path, "w")
+
+            original_archive = h5py.File(self.input().path, "r")
 
             for label in tqdm(original_archive.keys(), desc="Processing labels"):
                 group = new_archive.require_group(label)
 
-                for img in tqdm(original_archive[label].keys()):
-                    npy_img = original_archive[label][img].value
-                    processed_img = self.process_image(npy_img)
+                for img in original_archive[label].keys():
+                    npy_img = np.array(original_archive[label][img])
+                    # casting to float32
+                    processed_img = self.process_image(npy_img).astype(np.float32)
 
                     new_dset = group.create_dataset(img, data=processed_img)
 
@@ -47,6 +66,12 @@ class ProcessImageTask(luigi.Task):
             original_archive.close()
 
     def output(self):
+        """
+
+        The location of the transformed HDF5 archive on disk.
+
+        :return: luigi.LocalTarget
+        """
 
         # append the rest of the parameter values
 
@@ -70,33 +95,107 @@ class ProcessImageTask(luigi.Task):
         )
 
 
-class ImagesToGrayscaleTask(ProcessImageTask):
+# subtracting out the mean brightness
+class RescaleImageValuesTask(ProcessImageTask):
+    """
+
+    Subtracts out the mean brightness from each image.
+
+    """
+
     # location of image folder
     imgfolder = luigi.Parameter()
     hdffolder = luigi.Parameter()
-    identifier = "grayscale"
+    identifier = "rescaled"
 
     def requires(self):
+
+        """
+
+        :return: OchreToHD5Task, required
+        """
+
         return OchreToHD5Task(self.imgfolder, self.hdffolder)
 
     def process_image(self, img):
-        return cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        """
+
+        Normalizes the pixel values (assumed to be 8-bit integers) and subtracts out image-wise mean
+
+        :param img: np.ndarray
+        :return: np.ndarray
+        """
+
+        scaled = img / 255.0
+
+        return scaled - np.mean(scaled)
 
 
-# TODO: do this with only padding or only resizing/scaling?
+class ThresholdImageTask(ProcessImageTask):
+    """
+    Performing Otsu thresholding - as an alternative to rescaling.
+
+    """
+
+    # location of image folder
+    imgfolder = luigi.Parameter()
+    hdffolder = luigi.Parameter()
+    # optional, if not using this set it to zero
+    identifier = "thresholded"
+
+    def requires(self):
+        """
+
+
+        :return: OchreToHD5Task, required
+        """
+        return OchreToHD5Task(self.imgfolder, self.hdffolder)
+
+    def process_image(self, img):
+        """
+
+        Performs Otsu thresholding on the image using OpenCV
+
+        :param img: np.ndarray
+        :return: np.ndarray
+        """
+        _, threshed = cv2.threshold(img, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+
+        return threshed
+
+
 class StandardizeImageSizeTask(ProcessImageTask):
+    """
+    Resizes and pads an image to a square with the provided dimension.
+
+    """
+
     # location of image folder
     imgfolder = luigi.Parameter()
     hdffolder = luigi.Parameter()
     target_size = luigi.IntParameter()  # standardizing to square images
-    identifier = "standardized"
+    sigma = luigi.FloatParameter(
+        default=0.0
+    )  # optional, if not using this set it to zero
+    threshold = luigi.BoolParameter(default=False)
+    identifier = "resized"
 
     def requires(self):
-        return ImagesToGrayscaleTask(self.imgfolder, self.hdffolder)
+        """
+
+        Switches task graph construction depending on self.threshold argument.
+
+
+        :return: luigi.Task, either ThresholdImageTask or RescaleImageValuesTask
+        """
+
+        if self.threshold:
+            return ThresholdImageTask(self.imgfolder, self.hdffolder)
+        else:
+            return RescaleImageValuesTask(self.imgfolder, self.hdffolder)
 
     def process_image(self, img):
 
-        # TODO: update
         """from https://jdhao.github.io/2017/11/06/resize-image-to-square-with-padding/#using-opencv.
 
         Parameters
@@ -119,121 +218,17 @@ class StandardizeImageSizeTask(ProcessImageTask):
         new_size = tuple([int(x * ratio) for x in old_size])
         # new_size should be in (width, height) format
         img = cv2.resize(img, (new_size[1], new_size[0]))
-        delta_w = self.target_size - new_size[1]
-        delta_h = self.target_size - new_size[0]
+        delta_w = int(self.target_size) - new_size[1]
+        delta_h = int(self.target_size) - new_size[0]
         top, bottom = delta_h // 2, delta_h - (delta_h // 2)
         left, right = delta_w // 2, delta_w - (delta_w // 2)
-        color = 0
+
+        # filtering here before padding! otherwise, filter will be applied to the border as well.
+
+        img_filtered = gaussian_filter(img, sigma=float(self.sigma))
+
         new_im = cv2.copyMakeBorder(
-            img, top, bottom, left, right, cv2.BORDER_CONSTANT, value=color
+            img_filtered, top, bottom, left, right, cv2.BORDER_CONSTANT, value=0
         )
 
         return new_im
-
-
-class RescaleImageValuesTask(ProcessImageTask):
-    # location of image folder
-    imgfolder = luigi.Parameter()
-    hdffolder = luigi.Parameter()
-    target_size = luigi.IntParameter()  # standardizing to square images
-    identifier = "rescaled"
-
-    def requires(self):
-        return StandardizeImageSizeTask(
-            self.imgfolder, self.hdffolder, self.target_size
-        )
-
-    def process_image(self, img):
-        return StandardScaler().fit_transform(img)
-
-
-class GaussianBlurTask(ProcessImageTask):
-    # location of image folder
-    imgfolder = luigi.Parameter()
-    hdffolder = luigi.Parameter()
-    target_size = luigi.IntParameter()  # standardizing to square images
-    sigma = luigi.FloatParameter(default=0.5)
-    identifier = "blurred"
-
-    def requires(self):
-        return StandardizeImageSizeTask(
-            self.imgfolder, self.hdffolder, self.target_size
-        )
-
-    def process_image(self, img):
-        return gaussian_filter(img, sigma=self.sigma)
-
-
-# change task design - require creating subgroup for each label
-# to ensure that all labels are assigned properly in the next step.
-class AddGaussianNoiseTask(luigi.Task):
-    # location of image folder
-    imgfolder = luigi.Parameter()
-    hdffolder = luigi.Parameter()
-    target_size = luigi.IntParameter()  # standardizing to square images
-    sigma = luigi.FloatParameter(default=0.5)
-    num_augment = luigi.IntParameter()
-
-    def requires(self):
-        return GaussianBlurTask(
-            self.imgfolder, self.hdffolder, self.target_size, self.sigma
-        )
-
-    def run(self):
-        with self.output().temporary_path() as temp_output_path:
-            new_archive = h5py.File(temp_output_path)
-
-            original_archive = h5py.File(self.input().path)
-
-            for label in tqdm(original_archive.keys(), desc="Processing labels"):
-                group = new_archive.require_group(label)
-
-                for img in tqdm(original_archive[label].keys()):
-
-                    # create a subgroup so all molecules are organized correctly
-                    # new group
-                    img_group = group.create_group(img)
-
-                    original_img = original_archive[label][img].value
-                    augmented_images = self.make_augmented(original_img)
-
-                    for i, aug in enumerate(augmented_images):
-                        new_dset = img_group.create_dataset(
-                            img + "_aug_{}".format(i), data=aug
-                        )
-
-                        for key, val in original_archive[label][img].attrs.items():
-                            new_dset.attrs[key] = val
-
-            new_archive.close()
-            original_archive.close()
-
-    # produces
-    def make_augmented(self, img: np.array) -> List[np.array]:
-
-        return [img] + [
-            random_noise(img, mode="gaussian", clip=True)
-            for _ in range(self.num_augment)
-        ]
-
-    def output(self):
-        # append the rest of the parameter values
-
-        additional_params = [
-            param
-            for param, obj in self.get_params()
-            if param not in ["hdffolder", "imgfolder"]
-        ]
-
-        additional_param_vals = [
-            str(self.__getattribute__(param)) for param in additional_params
-        ]
-
-        return luigi.LocalTarget(
-            "{}/{}_{}_{}.h5".format(
-                self.hdffolder,
-                os.path.basename(self.imgfolder),
-                "augmented",
-                "_".join(additional_param_vals),
-            )
-        )

@@ -1,0 +1,11 @@
+{"activation": "relu",
+"dense_size": 512,
+"n_dense": 3,
+"dropout": 0.5,
+"batch_size":  32,
+"epochs": 512,
+"architecture": "resnet50",
+"transfer": false,
+"shear": 10,
+"zoom": 15,
+"optimizer": "adam"}
