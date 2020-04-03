@@ -20,7 +20,7 @@ class OchreDatasetTask(luigi.ExternalTask):
         """
         Checks if the folder is present.
 
-        :return:
+        :return: luigi.LocalTarget
         """
 
         return luigi.LocalTarget(self.imgfolder)
