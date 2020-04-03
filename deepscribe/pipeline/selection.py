@@ -13,7 +13,7 @@ from tensorflow.keras.preprocessing.image import ImageDataGenerator
 
 class SelectDatasetTask(luigi.Task):
     """
-    Selecting classes from larger dataset.
+    Selecting classes from larger dataset to produce a smaller archive for training.
     Assigns data to the train/validation/test sets.
     Returns .npz file with the different
     categories.
@@ -35,11 +35,22 @@ class SelectDatasetTask(luigi.Task):
     epsilon = luigi.FloatParameter(default=0.1)
 
     def requires(self):
+        """
+
+        :return: StandardizeImageSizeTask
+        """
+
         return StandardizeImageSizeTask(
             self.imgfolder, self.hdffolder, self.target_size, self.sigma, self.threshold
         )
 
     def run(self):
+        """
+
+        Splits data into train, test, eval sets and saves to npz archive.
+
+        :return:
+        """
 
         if sum(self.fractions) != 1.0:
             raise ValueError(
@@ -130,6 +141,13 @@ class SelectDatasetTask(luigi.Task):
         )
 
     def output(self):
+        """
+
+        LocalTarget with path of the output NPZ archive.
+
+        :return: luigi.LocalTarget
+        """
+
         return luigi.LocalTarget(
             "{}/{}_{}_{}_{}{}{}{}.npz".format(
                 self.hdffolder,

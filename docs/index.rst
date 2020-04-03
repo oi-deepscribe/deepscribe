@@ -10,7 +10,11 @@ Welcome to deepscribe's documentation!
    :maxdepth: 2
    :caption: Contents:
 
-   pipeline
+   pipeline/aggregation
+   pipeline/images
+   pipeline/selection
+   pipeline/training
+   pipeline/analysis
    models
 
 

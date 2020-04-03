@@ -38,6 +38,12 @@ class AnalysisTask(luigi.Task, ABC):
     epsilon = luigi.FloatParameter(default=0.1)
 
     def requires(self):
+        """
+
+        Task depends on a trained model and a dataset archive.
+
+        :return: Dictionary with TrainKerasModelFromDefinitionTask and SelectDatasetTask
+        """
         return {
             "model": TrainKerasModelFromDefinitionTask(
                 self.imgfolder,
@@ -68,9 +74,18 @@ class AnalysisTask(luigi.Task, ABC):
         }
 
 
-# produces confusion matrix from test dat
 class PlotConfusionMatrixTask(AnalysisTask):
+    """
+    Produces a confusion matrix from the model on test data. 
+
+    """
+
     def run(self):
+        """
+        Loads the model, runs it on test data, saves the confusion matrix as png.
+
+        :return: None
+        """
         # load matrix
 
         # load TF model and dataset
@@ -115,6 +130,13 @@ class PlotConfusionMatrixTask(AnalysisTask):
         plt.savefig(self.output().path)
 
     def output(self):
+        """
+
+        Location of the output image.
+
+        :return: luigi.LocalTarget
+        """
+
         p = Path(self.model_definition)
         p_data = Path(self.input()["dataset"].path)
 
@@ -126,7 +148,19 @@ class PlotConfusionMatrixTask(AnalysisTask):
 
 
 class GenerateClassificationReportTask(AnalysisTask):
+    """
+
+    Generates a classification report from the trained model on test data. 
+
+    """
+
     def run(self):
+        """
+        Loads the model, runs it on test data, saves the classification report as txt.
+
+
+        :return: None
+        """
         # load TF model and dataset
         model = kr.models.load_model(self.input()["model"].path)
         data = np.load(self.input()["dataset"].path)
@@ -161,6 +195,13 @@ class GenerateClassificationReportTask(AnalysisTask):
                 outf.write(report)
 
     def output(self):
+        """
+
+        Location of the output image.
+
+        :return: luigi.LocalTarget
+        """
+
         p = Path(self.model_definition)
         p_data = Path(self.input()["dataset"].path)
 
@@ -173,7 +214,18 @@ class GenerateClassificationReportTask(AnalysisTask):
 
 # plots a random sample of 16 incorrect images from test..
 class PlotIncorrectTask(AnalysisTask):
+    """
+
+    Loads 16 incorrectly classified images from test data and plots them in a grid.
+
+    """
+
     def run(self):
+        """
+        Loads model, runs on test data, picks 16 random incorrectly classified images.
+
+        :return:
+        """
 
         # load TF model and dataset
         model = kr.models.load_model(self.input()["model"].path)
@@ -214,6 +266,13 @@ class PlotIncorrectTask(AnalysisTask):
         plt.savefig(self.output().path)
 
     def output(self):
+        """
+
+        Location of the output image.
+
+        :return: luigi.LocalTarget
+        """
+
         p = Path(self.model_definition)
         p_data = Path(self.input()["dataset"].path)
 
@@ -226,6 +285,11 @@ class PlotIncorrectTask(AnalysisTask):
 
 # runs the collection of analysis tasks on the
 class RunAnalysisOnTestDataTask(luigi.WrapperTask):
+    """
+    WrapperTask requiring the tasks GenerateClassificationReportTask, PlotConfusionMatrixTask, and PlotIncorrectTask.
+
+    """
+
     imgfolder = luigi.Parameter()
     hdffolder = luigi.Parameter()
     modelsfolder = luigi.Parameter()
@@ -242,6 +306,11 @@ class RunAnalysisOnTestDataTask(luigi.WrapperTask):
     epsilon = luigi.FloatParameter(default=0.1)
 
     def requires(self):
+        """
+        Requires the tasks GenerateClassificationReportTask, PlotConfusionMatrixTask, and PlotIncorrectTask.
+
+        :return: List of luigi.Task subclasses
+        """
         return [
             GenerateClassificationReportTask(
                 self.imgfolder,

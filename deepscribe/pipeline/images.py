@@ -27,9 +27,23 @@ class ProcessImageTask(luigi.Task, ABC):
     identifier = ""  # to be set to describe image transformation
 
     def process_image(self, img):
+        """
+
+        Task mapping an image to to a transformed image.
+
+        :param img: np.ndarray
+        :return: np.ndarray
+        """
         raise NotImplementedError
 
     def run(self):
+        """
+
+        Runs the process_image function on every image in the HDF5 archive, keeping the archive structure constant.
+
+        :return:
+        """
+
         with self.output().temporary_path() as self.temp_output_path:
             new_archive = h5py.File(self.temp_output_path, "w")
 
@@ -52,6 +66,12 @@ class ProcessImageTask(luigi.Task, ABC):
             original_archive.close()
 
     def output(self):
+        """
+
+        The location of the transformed HDF5 archive on disk.
+
+        :return: luigi.LocalTarget
+        """
 
         # append the rest of the parameter values
 
@@ -89,9 +109,22 @@ class RescaleImageValuesTask(ProcessImageTask):
     identifier = "rescaled"
 
     def requires(self):
+
+        """
+
+        :return: OchreToHD5Task, required
+        """
+
         return OchreToHD5Task(self.imgfolder, self.hdffolder)
 
     def process_image(self, img):
+        """
+
+        Normalizes the pixel values (assumed to be 8-bit integers) and subtracts out image-wise mean
+
+        :param img: np.ndarray
+        :return: np.ndarray
+        """
 
         scaled = img / 255.0
 
@@ -111,9 +144,21 @@ class ThresholdImageTask(ProcessImageTask):
     identifier = "thresholded"
 
     def requires(self):
+        """
+
+
+        :return: OchreToHD5Task, required
+        """
         return OchreToHD5Task(self.imgfolder, self.hdffolder)
 
     def process_image(self, img):
+        """
+
+        Performs Otsu thresholding on the image using OpenCV
+
+        :param img: np.ndarray
+        :return: np.ndarray
+        """
         _, threshed = cv2.threshold(img, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
 
         return threshed
@@ -136,6 +181,14 @@ class StandardizeImageSizeTask(ProcessImageTask):
     identifier = "resized"
 
     def requires(self):
+        """
+
+        Switches task graph construction depending on self.threshold argument.
+
+
+        :return: luigi.Task, either ThresholdImageTask or RescaleImageValuesTask
+        """
+
         if self.threshold:
             return ThresholdImageTask(self.imgfolder, self.hdffolder)
         else:

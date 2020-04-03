@@ -9,21 +9,51 @@ import unicodedata
 
 
 class OchreDatasetTask(luigi.ExternalTask):
+    """
+    An ExternalTask requiring the presence of folder containing images of PFA hotspots.
+
+    """
+
     imgfolder = luigi.Parameter()
 
     def output(self):
+        """
+        Checks if the folder is present.
+
+        :return:
+        """
+
         return luigi.LocalTarget(self.imgfolder)
 
 
 class OchreToHD5Task(luigi.Task):
+    """
+
+    Converts a folder of OCHRE hotspots into a single HDF5 archive
+
+    """
+
     # location of image folder
     imgfolder = luigi.Parameter()
     hdffolder = luigi.Parameter()
 
     def requires(self):
+        """
+        Requires the presence of the OCHRE Dataset folder
+
+        :return: OchreDatasetTask
+        """
+
         return OchreDatasetTask(self.imgfolder)
 
     def run(self):
+
+        """
+
+        Copies the images into a single HDF5 archive with metadata from the filenames preserved.
+
+        :return: None
+        """
 
         # open temporary path
 
@@ -59,6 +89,13 @@ class OchreToHD5Task(luigi.Task):
             archive.close()
 
     def output(self):
+        """
+
+        HDF5 archive containing contents of the folder.
+
+        :return: luigi.LocalTarget
+        """
+
         return luigi.LocalTarget(
             "{}/{}.h5".format(self.hdffolder, os.path.basename(self.imgfolder))
         )

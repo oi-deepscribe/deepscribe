@@ -44,6 +44,10 @@ class TrainModelFromDefinitionTask(luigi.Task, ABC):
     epsilon = luigi.FloatParameter(default=0.1)
 
     def requires(self):
+        """
+
+        :return: SelectDatasetTask
+        """
         return SelectDatasetTask(
             self.imgfolder,
             self.hdffolder,
@@ -76,6 +80,11 @@ class TrainModelFromDefinitionTask(luigi.Task, ABC):
         raise NotImplementedError
 
     def run(self):
+        """
+        Creates output directories, load model definition, run training
+
+        :return:
+        """
 
         self.output().makedirs()
 
@@ -108,6 +117,13 @@ class TrainKerasModelFromDefinitionTask(TrainModelFromDefinitionTask):
         return model_params
 
     def run_training(self, model_params: dict):
+        """
+        Selects model class from params dictionary and runs training.
+
+        :param model_params: dict
+        :return: None
+        """
+
         data = np.load(self.input().path)
 
         if "conv4_kernels" in model_params:
@@ -177,6 +193,14 @@ class TrainKerasModelFromDefinitionTask(TrainModelFromDefinitionTask):
         model.save(self.output().path)
 
     def output(self):
+
+        """
+
+        Output location of trained Keras model in HDF5 format.
+
+        :return: luigi.LocalTarget
+        """
+
         p = Path(self.model_definition)
         p_data = Path(self.input().path)
 
@@ -227,6 +251,13 @@ class RunTalosScanTask(TrainModelFromDefinitionTask):
         scan_object.data.to_pickle(self.output().path)
 
     def output(self):
+        """
+
+        Pickled Talos Scan object.
+
+        :return: luigi.LocalTarget
+        """
+
         p = Path(self.model_definition)
         p_data = Path(self.input().path)
 
