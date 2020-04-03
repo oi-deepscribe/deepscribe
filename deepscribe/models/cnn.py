@@ -63,13 +63,9 @@ class CNNAugment(ParameterModel, ABC):
             shear_range=shear_range, zoom_range=zoom_range
         )
 
-        additional_steps = (
-            0 if "additional_steps" not in params else abs(params["additional_steps"])
-        )
-
         history = model.fit_generator(
             data_gen.flow(x_train, y=y_train),
-            steps_per_epoch=x_train.shape[0] / params["batch_size"] + additional_steps,
+            steps_per_epoch=x_train.shape[0] / params["batch_size"],
             epochs=params["epochs"],
             validation_data=(x_val, y_val),
             callbacks=callbacks,
