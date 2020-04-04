@@ -3,6 +3,6 @@ scikit-learn
 numpy
 matplotlib
 wandb
-opencv
+opencv-python
 h5py==2.10
 git+https://github.com/autonomio/talos@1.0
