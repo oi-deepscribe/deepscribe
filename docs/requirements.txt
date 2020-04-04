@@ -5,3 +5,4 @@ matplotlib
 wandb
 opencv-python
 h5py==2.10
+tqdm
