@@ -15,4 +15,4 @@ The majority of the `deepscribe` code base consists of Luigi workflow tasks sele
 
 # Documentation
 
-TODO: insert readthedocs here. 
+Docs are a work in progress, but can be found at [https://deepscribe.readthedocs.io/en/latest/](https://deepscribe.readthedocs.io/en/latest/)
