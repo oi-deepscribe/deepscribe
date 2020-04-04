@@ -1,0 +1,9 @@
+tensorflow==2.1.0
+luigi
+scikit-learn
+numpy
+matplotlib
+wandb
+opencv
+h5py==2.10
+git+https://github.com/autonomio/talos@1.0
