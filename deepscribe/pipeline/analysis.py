@@ -174,6 +174,8 @@ class GenerateClassificationReportTask(AnalysisTask):
         with open(self.model_definition, "r") as modelf:
             model_params = json.load(modelf)
 
+        # TEST DATA
+
         # (batch_size, num_classes)
         pred_logits = model.predict(
             np.repeat(data["test_imgs"], 3, axis=3)
@@ -187,17 +189,38 @@ class GenerateClassificationReportTask(AnalysisTask):
         # compute confusion matrix
 
         report = classification_report(
-            data["test_labels"], pred_labels, target_names=data["classes"]
+            data["train_labels"], pred_labels, target_names=data["classes"]
+        )
+
+        # TRAIN DATA
+
+        # (batch_size, num_classes)
+        pred_logits = model.predict(
+            np.repeat(data["train_imgs"], 3, axis=3)
+            if "architecture" in model_params
+            else data["train_imgs"]
+        )
+
+        # computing predicted labels
+        pred_labels = np.argmax(pred_logits, axis=1)
+
+        # compute confusion matrix
+
+        report_train = classification_report(
+            data["train_labels"], pred_labels, target_names=data["classes"]
         )
 
         with self.output().temporary_path() as temppath:
             with open(temppath, "w") as outf:
+                outf.write("REPORT ON TEST\n")
                 outf.write(report)
+                outf.write("REPORT ON TRAIN\n")
+                outf.write(report_train)
 
     def output(self):
         """
 
-        Location of the output image.
+        Location of the output report.
 
         :return: luigi.LocalTarget
         """

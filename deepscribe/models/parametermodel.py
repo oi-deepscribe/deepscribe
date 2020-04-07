@@ -69,6 +69,17 @@ class ParameterModel(ABC):
         """
         model = self._build_model(params)
 
+        # compile model here!
+
+        model.compile(
+            optimizer=params["optimizer"],
+            loss="sparse_categorical_crossentropy",
+            metrics=[
+                "acc",
+                kr.metrics.SparseTopKCategoricalAccuracy(k=params.get("k", 3)),
+            ],
+        )
+
         history = self._train_model(x_train, y_train, x_val, y_val, model, params)
 
         return history, model

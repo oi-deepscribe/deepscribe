@@ -124,12 +124,7 @@ class CNN2Conv(CNNAugment):
         # model.add(kr.layers.Dense(512, activation='relu'))
         model.add(kr.layers.Dense(params["num_classes"], activation="softmax"))
 
-        # TODO: set learning rate
-        model.compile(
-            optimizer=params["optimizer"],
-            loss="sparse_categorical_crossentropy",
-            metrics=["acc", kr.metrics.TopKCategoricalAccuracy(k=params.get("k", 3))],
-        )
+        # TODO: set learning rat
 
         return model
 
@@ -168,12 +163,6 @@ class VGG16(CNNAugment):
         # TODO: set learning rate
 
         model = kr.Model(inputs=base_model.input, outputs=predictions)
-
-        model.compile(
-            optimizer=params["optimizer"],
-            loss="sparse_categorical_crossentropy",
-            metrics=["acc", kr.metrics.TopKCategoricalAccuracy(k=params.get("k", 3))],
-        )
 
         return model
 
@@ -217,12 +206,6 @@ class VGG19(CNNAugment):
 
         model = kr.Model(inputs=base_model.input, outputs=predictions)
 
-        model.compile(
-            optimizer=params["optimizer"],
-            loss="sparse_categorical_crossentropy",
-            metrics=["acc", kr.metrics.TopKCategoricalAccuracy(k=params.get("k", 3))],
-        )
-
         return model
 
 
@@ -264,12 +247,6 @@ class ResNet50(CNNAugment):
 
         model = kr.Model(inputs=base_model.input, outputs=predictions)
 
-        model.compile(
-            optimizer=params["optimizer"],
-            loss="sparse_categorical_crossentropy",
-            metrics=["acc", kr.metrics.TopKCategoricalAccuracy(k=params.get("k", 3))],
-        )
-
         return model
 
 
@@ -310,11 +287,5 @@ class ResNet50V2(CNNAugment):
         # TODO: set learning rate
 
         model = kr.Model(inputs=base_model.input, outputs=predictions)
-
-        model.compile(
-            optimizer=params["optimizer"],
-            loss="sparse_categorical_crossentropy",
-            metrics=["acc", kr.metrics.TopKCategoricalAccuracy(k=params.get("k", 3))],
-        )
 
         return model
