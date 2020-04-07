@@ -189,7 +189,7 @@ class GenerateClassificationReportTask(AnalysisTask):
         # compute confusion matrix
 
         report = classification_report(
-            data["train_labels"], pred_labels, target_names=data["classes"]
+            data["test_labels"], pred_labels, target_names=data["classes"]
         )
 
         # TRAIN DATA
