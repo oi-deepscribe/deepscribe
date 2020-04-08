@@ -143,6 +143,7 @@ class VGG16(CNNAugment):
         base_model = kr.applications.vgg16.VGG16(
             weights="imagenet" if params.get("transfer", False) else None,
             include_top=False,
+            input_shape=img_shape,
         )
 
         x = base_model.output
@@ -181,6 +182,7 @@ class VGG19(CNNAugment):
         base_model = kr.applications.vgg19.VGG19(
             weights="imagenet" if params.get("transfer", False) else None,
             include_top=False,
+            input_shape=img_shape,
         )
 
         x = base_model.output
@@ -222,6 +224,7 @@ class ResNet50(CNNAugment):
         base_model = kr.applications.resnet50.ResNet50(
             weights="imagenet" if params.get("transfer", False) else None,
             include_top=False,
+            input_shape=img_shape,
         )
 
         x = base_model.output
@@ -263,6 +266,7 @@ class ResNet50V2(CNNAugment):
         base_model = kr.applications.resnet_v2.ResNet50V2(
             weights="imagenet" if params.get("transfer", False) else None,
             include_top=False,
+            input_shape=img_shape,
         )
 
         x = base_model.output

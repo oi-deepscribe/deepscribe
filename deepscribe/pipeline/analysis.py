@@ -94,15 +94,8 @@ class PlotConfusionMatrixTask(AnalysisTask):
 
         # make predictions on data
 
-        with open(self.model_definition, "r") as modelf:
-            model_params = json.load(modelf)
-
         # (batch_size, num_classes)
-        pred_logits = model.predict(
-            np.repeat(data["test_imgs"], 3, axis=3)
-            if "architecture" in model_params
-            else data["test_imgs"]
-        )
+        pred_logits = model.predict(data["test_imgs"])
 
         # computing predicted labels
         pred_labels = np.argmax(pred_logits, axis=1)
@@ -171,17 +164,10 @@ class GenerateClassificationReportTask(AnalysisTask):
 
         # TODO: better way of saving and loading models and handling this edge case
 
-        with open(self.model_definition, "r") as modelf:
-            model_params = json.load(modelf)
-
         # TEST DATA
 
         # (batch_size, num_classes)
-        pred_logits = model.predict(
-            np.repeat(data["test_imgs"], 3, axis=3)
-            if "architecture" in model_params
-            else data["test_imgs"]
-        )
+        pred_logits = model.predict(data["test_imgs"])
 
         # computing predicted labels
         pred_labels = np.argmax(pred_logits, axis=1)
@@ -195,11 +181,7 @@ class GenerateClassificationReportTask(AnalysisTask):
         # TRAIN DATA
 
         # (batch_size, num_classes)
-        pred_logits = model.predict(
-            np.repeat(data["train_imgs"], 3, axis=3)
-            if "architecture" in model_params
-            else data["train_imgs"]
-        )
+        pred_logits = model.predict(data["train_imgs"])
 
         # computing predicted labels
         pred_labels = np.argmax(pred_logits, axis=1)
@@ -253,16 +235,8 @@ class PlotIncorrectTask(AnalysisTask):
         # load TF model and dataset
         model = kr.models.load_model(self.input()["model"].path)
         data = np.load(self.input()["dataset"].path)
-
-        with open(self.model_definition, "r") as modelf:
-            model_params = json.load(modelf)
-
         # (batch_size, num_classes)
-        pred_logits = model.predict(
-            np.repeat(data["test_imgs"], 3, axis=3)
-            if "architecture" in model_params
-            else data["test_imgs"]
-        )
+        pred_logits = model.predict(data["test_imgs"])
         # (batch_size,)
 
         pred_labels = np.argmax(pred_logits, axis=1)
