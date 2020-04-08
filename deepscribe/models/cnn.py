@@ -84,7 +84,7 @@ class CNN2Conv(CNNAugment):
 
     """
 
-    def _build_model(self, params: Dict) -> kr.Model:
+    def _build_model(self, params: Dict, img_shape: tuple = None) -> kr.Model:
         model = kr.models.Sequential()
         model.add(
             kr.layers.Conv2D(
@@ -138,7 +138,7 @@ class VGG16(CNNAugment):
 
     """
 
-    def _build_model(self, params: Dict) -> kr.Model:
+    def _build_model(self, params: Dict, img_shape: tuple = None) -> kr.Model:
 
         base_model = kr.applications.vgg16.VGG16(
             weights="imagenet" if params.get("transfer", False) else None,
@@ -176,7 +176,7 @@ class VGG19(CNNAugment):
 
         """
 
-    def _build_model(self, params: Dict) -> kr.Model:
+    def _build_model(self, params: Dict, img_shape: tuple = None) -> kr.Model:
 
         base_model = kr.applications.vgg19.VGG19(
             weights="imagenet" if params.get("transfer", False) else None,
@@ -217,7 +217,7 @@ class ResNet50(CNNAugment):
 
     """
 
-    def _build_model(self, params: Dict) -> kr.Model:
+    def _build_model(self, params: Dict, img_shape: tuple = None) -> kr.Model:
 
         base_model = kr.applications.resnet50.ResNet50(
             weights="imagenet" if params.get("transfer", False) else None,
@@ -258,7 +258,7 @@ class ResNet50V2(CNNAugment):
 
     """
 
-    def _build_model(self, params: Dict) -> kr.Model:
+    def _build_model(self, params: Dict, img_shape: tuple = None) -> kr.Model:
 
         base_model = kr.applications.resnet_v2.ResNet50V2(
             weights="imagenet" if params.get("transfer", False) else None,
@@ -299,9 +299,9 @@ class ResNet18(CNNAugment):
 
     """
 
-    def _build_model(self, params: Dict) -> kr.Model:
+    def _build_model(self, params: Dict, img_shape: tuple = None) -> kr.Model:
 
-        img_input = kr.layers.Input()
+        img_input = kr.layers.Input(shape=img_shape)
         x = layers.ZeroPadding2D(padding=(3, 3), name="conv1_pad")(img_input)
         x = layers.Conv2D(
             64,

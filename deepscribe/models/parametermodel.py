@@ -19,9 +19,10 @@ class ParameterModel(ABC):
     def __init__(self):
         pass
 
-    def _build_model(self, params: Dict) -> kr.Model:
+    def _build_model(self, params: Dict, img_shape: tuple = None) -> kr.Model:
         """
 
+        :param img_shape: tuple containing image shape
         :param params: Dictionary containing model parameter values.
 
         returns compiled Keras model.
@@ -67,7 +68,7 @@ class ParameterModel(ABC):
         :param model: tf.Keras model.
         :param params: parameter dictionary.
         """
-        model = self._build_model(params)
+        model = self._build_model(params, img_shape=x_train.shape[1:])
 
         # compile model here!
 
