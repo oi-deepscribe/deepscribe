@@ -1,4 +1,5 @@
 import tensorflow.keras as kr
+from tensorflow.keras import layers
 import tensorflow as tf
 import numpy as np
 from typing import Dict, Tuple
@@ -8,6 +9,7 @@ import os
 from sklearn.utils.class_weight import compute_class_weight
 from abc import ABC
 from .parametermodel import ParameterModel
+from .blocks import conv_block, identity_block
 
 
 class CNNAugment(ParameterModel, ABC):
@@ -287,5 +289,53 @@ class ResNet50V2(CNNAugment):
         # TODO: set learning rate
 
         model = kr.Model(inputs=base_model.input, outputs=predictions)
+
+        return model
+
+
+class ResNet18(CNNAugment):
+    """
+    Shallower ResNet architecture.
+
+    """
+
+    def _build_model(self, params: Dict) -> kr.Model:
+
+        img_input = kr.layers.Input()
+        x = layers.ZeroPadding2D(padding=(3, 3), name="conv1_pad")(img_input)
+        x = layers.Conv2D(
+            64,
+            (7, 7),
+            strides=(2, 2),
+            padding="valid",
+            kernel_initializer="he_normal",
+            name="conv1",
+        )(x)
+        x = layers.BatchNormalization(name="bn_conv1")(x)
+        x = layers.Activation("relu")(x)
+        x = layers.ZeroPadding2D(padding=(1, 1), name="pool1_pad")(x)
+        x = layers.MaxPooling2D((3, 3), strides=(2, 2))(x)
+        # TODO: read these from params
+        # default values from the original ResNet50 implementation.
+        x = conv_block(x, 3, [64, 64, 256], stage=2, block="a", strides=(1, 1))
+        x = identity_block(x, 3, [64, 64, 256], stage=2, block="b")
+        x = identity_block(x, 3, [64, 64, 256], stage=2, block="c")
+
+        x = conv_block(x, 3, [128, 128, 512], stage=3, block="a")
+        x = identity_block(x, 3, [128, 128, 512], stage=3, block="b")
+        x = identity_block(x, 3, [128, 128, 512], stage=3, block="c")
+
+        x = kr.layers.GlobalAveragePooling2D()(x)
+
+        x = kr.layers.Dropout(params["dropout"])(x)
+
+        for i in range(params["n_dense"]):
+            x = kr.layers.Dense(params["dense_size"], activation=params["activation"])(
+                x
+            )
+
+        predictions = kr.layers.Dense(params["num_classes"], activation="softmax")(x)
+
+        model = kr.Model(inputs=img_input, outputs=predictions)
 
         return model
