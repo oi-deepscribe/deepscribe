@@ -41,6 +41,16 @@ class CNNAugment(ParameterModel, ABC):
             if "early_stopping" in params
             else []
         )
+
+        # adding
+
+        if "reduce_lr" in params:
+            callbacks.append(
+                kr.callbacks.ReduceLROnPlateau(
+                    monitor="val_loss", min_delta=1e-4, patience=params["reduce_lr"]
+                )
+            )
+
         # logging params to wandb - not syncing, active syncing causes
         # slurm to not terminate the job
         os.environ["WANDB_MODE"] = "dryrun"
@@ -61,8 +71,13 @@ class CNNAugment(ParameterModel, ABC):
 
         shear_range = params.get("shear", 0.0)
         zoom_range = params.get("zoom", 0.0)
+        width_shift = params.get("width-shift", 0.0)
+        height_shift = params.get("width-shift", 0.0)
         data_gen = kr.preprocessing.image.ImageDataGenerator(
-            shear_range=shear_range, zoom_range=zoom_range
+            shear_range=shear_range,
+            zoom_range=zoom_range,
+            width_shift_range=width_shift,
+            height_shift_range=height_shift,
         )
 
         history = model.fit_generator(

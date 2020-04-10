@@ -72,8 +72,16 @@ class ParameterModel(ABC):
 
         # compile model here!
 
+        # TODO: pick optimizer type
+
+        optimizer_type = params.get("optimizer", "adam")
+
+        if optimizer_type == "adam":
+
+            optimizer = kr.optimizers.Adam(lr=params.get("lr", 0.001))
+
         model.compile(
-            optimizer=params["optimizer"],
+            optimizer=optimizer,
             loss="sparse_categorical_crossentropy",
             metrics=[
                 "acc",
