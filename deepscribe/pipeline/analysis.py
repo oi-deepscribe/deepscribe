@@ -216,11 +216,12 @@ class GenerateClassificationReportTask(AnalysisTask):
             with open(temppath, "w") as outf:
                 outf.write("REPORT ON TEST\n")
                 outf.write(report)
-                outf.write("TOP-K ACCURACIES ON TEST")
+                outf.write("TOP-K ACCURACIES ON TEST\n")
                 outf.write("\n".join(top_k_test))
+                outf.write("\n")
                 outf.write("REPORT ON TRAIN\n")
                 outf.write(report_train)
-                outf.write("TOP-K ACCURACIES ON TRAIN")
+                outf.write("TOP-K ACCURACIES ON TRAIN\n")
                 outf.write("\n".join(top_k_train))
 
     def output(self):
