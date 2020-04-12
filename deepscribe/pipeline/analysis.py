@@ -181,7 +181,7 @@ class GenerateClassificationReportTask(AnalysisTask):
 
         top_k_test = []
 
-        for i in range(2, min(5, len(data["classes"]))):
+        for i in range(2, min(6, len(data["classes"]))):
             k_i = kr.metrics.sparse_top_k_categorical_accuracy(
                 data["test_labels"], pred_logits, k=i
             )
@@ -205,7 +205,7 @@ class GenerateClassificationReportTask(AnalysisTask):
         top_k_train = []
 
         # top-k accuracy on all data
-        for i in range(2, min(5, len(data["classes"]))):
+        for i in range(2, min(6, len(data["classes"]))):
             k_i = kr.metrics.sparse_top_k_categorical_accuracy(
                 data["train_labels"], pred_logits, k=i
             )
