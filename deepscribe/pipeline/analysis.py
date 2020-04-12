@@ -186,7 +186,7 @@ class GenerateClassificationReportTask(AnalysisTask):
                 data["test_labels"], pred_logits, k=i
             )
 
-            top_k_test.append(f"top-{i} accuracy: {k_i}")
+            top_k_test.append(f"top-{i} accuracy: {np.mean(k_i)}")
 
         # TRAIN DATA
 
@@ -210,7 +210,7 @@ class GenerateClassificationReportTask(AnalysisTask):
                 data["train_labels"], pred_logits, k=i
             )
 
-            top_k_train.append(f"top-{i} accuracy: {k_i}")
+            top_k_train.append(f"top-{i} accuracy: {np.mean(k_i)}")
 
         with self.output().temporary_path() as temppath:
             with open(temppath, "w") as outf:
