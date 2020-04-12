@@ -170,6 +170,9 @@ class GenerateClassificationReportTask(AnalysisTask):
 
         # compute confusion matrix
 
+        print(data["test_labels"].shape)
+        print(pred_labels.shape)
+
         report = classification_report(
             data["test_labels"], pred_labels, target_names=data["classes"]
         )
