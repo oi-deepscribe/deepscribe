@@ -160,10 +160,6 @@ class GenerateClassificationReportTask(AnalysisTask):
 
         # make predictions on data
 
-        # load model description, check if it's being transferred from an RGB model
-
-        # TODO: better way of saving and loading models and handling this edge case
-
         # TEST DATA
 
         # (batch_size, num_classes)
@@ -177,6 +173,17 @@ class GenerateClassificationReportTask(AnalysisTask):
         report = classification_report(
             data["test_labels"], pred_labels, target_names=data["classes"]
         )
+
+        # Compute the top-k accuracy across all of the data:
+
+        top_k_test = []
+
+        for i in range(2, min(5, len(data["classes"]))):
+            k_i = kr.metrics.sparse_top_k_categorical_accuracy(
+                data["test_labels"], pred_labels, k=i
+            )
+
+            top_k_test.append(f"top-{i} accuracy: {k_i}")
 
         # TRAIN DATA
 
@@ -192,12 +199,26 @@ class GenerateClassificationReportTask(AnalysisTask):
             data["train_labels"], pred_labels, target_names=data["classes"]
         )
 
+        top_k_train = []
+
+        # top-k accuracy on all data
+        for i in range(2, min(5, len(data["classes"]))):
+            k_i = kr.metrics.sparse_top_k_categorical_accuracy(
+                data["train_labels"], pred_labels, k=i
+            )
+
+            top_k_train.append(f"top-{i} accuracy: {k_i}")
+
         with self.output().temporary_path() as temppath:
             with open(temppath, "w") as outf:
                 outf.write("REPORT ON TEST\n")
                 outf.write(report)
+                outf.write("TOP-K ACCURACIES ON TEST")
+                outf.write("\n".join(top_k_test))
                 outf.write("REPORT ON TRAIN\n")
                 outf.write(report_train)
+                outf.write("TOP-K ACCURACIES ON TRAIN")
+                outf.write("\n".join(top_k_train))
 
     def output(self):
         """
