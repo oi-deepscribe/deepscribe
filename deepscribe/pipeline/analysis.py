@@ -170,8 +170,8 @@ class GenerateClassificationReportTask(AnalysisTask):
 
         # compute confusion matrix
 
-        print(data["test_labels"].shape)
-        print(pred_labels.shape)
+        # print(data["test_labels"].shape)
+        # print(pred_labels.shape)
 
         report = classification_report(
             data["test_labels"], pred_labels, target_names=data["classes"]
@@ -183,7 +183,7 @@ class GenerateClassificationReportTask(AnalysisTask):
 
         for i in range(2, min(5, len(data["classes"]))):
             k_i = kr.metrics.sparse_top_k_categorical_accuracy(
-                data["test_labels"], pred_labels, k=i
+                data["test_labels"], pred_logits, k=i
             )
 
             top_k_test.append(f"top-{i} accuracy: {k_i}")
@@ -207,7 +207,7 @@ class GenerateClassificationReportTask(AnalysisTask):
         # top-k accuracy on all data
         for i in range(2, min(5, len(data["classes"]))):
             k_i = kr.metrics.sparse_top_k_categorical_accuracy(
-                data["train_labels"], pred_labels, k=i
+                data["train_labels"], pred_logits, k=i
             )
 
             top_k_train.append(f"top-{i} accuracy: {k_i}")
