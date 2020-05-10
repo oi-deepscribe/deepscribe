@@ -10,6 +10,7 @@ from sklearn.utils.class_weight import compute_class_weight
 from abc import ABC
 from .parametermodel import ParameterModel
 from .blocks import conv_block, identity_block
+from imblearn.over_sampling import RandomOverSampler
 
 
 class CNNAugment(ParameterModel, ABC):
@@ -32,19 +33,18 @@ class CNNAugment(ParameterModel, ABC):
         if "seed" in params:
             tf.random.set_seed(params["seed"])
 
-        callbacks = (
-            [
+        callbacks = []
+
+        if params.get("early_stopping", 0) > 0:
+            callbacks.append(
                 kr.callbacks.EarlyStopping(
                     monitor="val_loss", patience=params["early_stopping"]
                 )
-            ]
-            if "early_stopping" in params
-            else []
-        )
+            )
 
         # adding
 
-        if "reduce_lr" in params:
+        if params.get("reduce_lr", 0) > 0:
             callbacks.append(
                 kr.callbacks.ReduceLROnPlateau(
                     monitor="val_loss", min_delta=1e-4, patience=params["reduce_lr"]
@@ -59,7 +59,7 @@ class CNNAugment(ParameterModel, ABC):
 
         callbacks.append(WandbCallback())
 
-        if "reweight" in params:
+        if params.get("reweight", False):
             class_weights_arr = compute_class_weight(
                 "balanced", np.unique(y_train), y_train
             )
@@ -80,9 +80,23 @@ class CNNAugment(ParameterModel, ABC):
             height_shift_range=height_shift,
         )
 
+        # oversample training data
+
+        if params.get("oversample", False):
+            # need to flatten to use with estimator
+            # this is probably very memory inefficient
+            x_train_flat, y_train = RandomOverSampler(random_state=0).fit_resample(
+                x_train.reshape((x_train.shape[0], -1)), y_train
+            )
+
+            # new amount of data!
+            x_train = x_train_flat.reshape(
+                tuple(y_train.shape[:1]) + tuple(x_train.shape[1:])
+            )
+
         history = model.fit_generator(
             data_gen.flow(x_train, y=y_train),
-            steps_per_epoch=x_train.shape[0] / params["batch_size"],
+            steps_per_epoch=x_train.shape[0] / params["bsize"],
             epochs=params["epochs"],
             validation_data=(x_val, y_val),
             callbacks=callbacks,
@@ -209,7 +223,7 @@ class VGG19(CNNAugment):
 
         x = kr.layers.Dropout(params["dropout"])(x)
 
-        for i in range(params["n_dense"]):
+        for _ in range(params["n_dense"]):
             x = kr.layers.Dense(params["dense_size"], activation=params["activation"])(
                 x
             )
@@ -251,7 +265,7 @@ class ResNet50(CNNAugment):
 
         x = kr.layers.Dropout(params["dropout"])(x)
 
-        for i in range(params["n_dense"]):
+        for _ in range(params["n_dense"]):
             x = kr.layers.Dense(params["dense_size"], activation=params["activation"])(
                 x
             )
@@ -293,7 +307,7 @@ class ResNet50V2(CNNAugment):
 
         x = kr.layers.Dropout(params["dropout"])(x)
 
-        for i in range(params["n_dense"]):
+        for _ in range(params["n_dense"]):
             x = kr.layers.Dense(params["dense_size"], activation=params["activation"])(
                 x
             )
@@ -346,12 +360,12 @@ class ResNet18(CNNAugment):
 
         x = kr.layers.GlobalAveragePooling2D()(x)
 
-        x = kr.layers.Dropout(params["dropout"])(x)
+        x = kr.layers.Dropout(params.get("dropout", 0.0))(x)
 
-        for i in range(params["n_dense"]):
-            x = kr.layers.Dense(params["dense_size"], activation=params["activation"])(
-                x
-            )
+        for _ in range(params.get("n_dense", 0)):
+            x = kr.layers.Dense(
+                params.get("dense_size", 512), activation=params["activation"]
+            )(x)
 
         predictions = kr.layers.Dense(params["num_classes"], activation="softmax")(x)
 

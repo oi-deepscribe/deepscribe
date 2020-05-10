@@ -19,6 +19,202 @@ import matplotlib.pyplot as plt
 import talos
 
 
+class TrainedModelTask(luigi.Task, ABC):
+    """
+
+    Abstract class used to keep parameters consistent between task types!
+
+    Any class that produces or uses a trained model should inherit this.
+
+    """
+
+    imgfolder = luigi.Parameter()
+    hdffolder = luigi.Parameter()
+    modelsfolder = luigi.Parameter()
+    target_size = luigi.IntParameter()  # standardizing to square images
+    keep_categories = luigi.ListParameter()
+    fractions = luigi.ListParameter()  # train/valid/test fraction
+    rest_as_other = luigi.BoolParameter(
+        default=False
+    )  # set the remaining as "other" - not recommended for small keep_category lengths
+    whiten = luigi.BoolParameter(default=False)
+    epsilon = luigi.FloatParameter(default=0.1)
+    epochs = luigi.IntParameter()
+    bsize = luigi.IntParameter()
+    architecture = luigi.Parameter(default="resnet18")  # architecture ID
+    sigma = luigi.FloatParameter(default=0.5)
+    threshold = luigi.BoolParameter(default=False)
+    reweight = luigi.BoolParameter(default=False)
+    optimizer = luigi.Parameter(default="adam")
+    activation = luigi.Parameter(default="relu")
+    early_stopping = luigi.IntParameter(default=0)
+    reduce_lr = luigi.IntParameter(default=0)
+    oversample = luigi.BoolParameter(default=False)
+
+
+class TrainKerasModelTask(TrainedModelTask):
+    """
+    Parametrize the model entirely from Luigi parameters instead of using a separate params file.
+    Produces longer file names and longer task specification, but ultimately makes it easier to iterate on experiments. 
+
+    Parameters are used to build a dictionary that is passed to a model building class, for compatibility with Talos.
+    """
+
+    def requires(self):
+        """
+
+        :return: SelectDatasetTask
+        """
+        return SelectDatasetTask(
+            self.imgfolder,
+            self.hdffolder,
+            self.target_size,
+            self.keep_categories,
+            self.fractions,
+            self.sigma,
+            self.threshold,
+            self.rest_as_other,
+            self.whiten,
+            self.epsilon,
+        )
+
+    def run(self):
+
+        # create output directory
+        self.output().makedirs()
+
+        # assemble parameter dictionary from luigi args
+        model_params = {
+            name: self.__getattribute__(name) for name, _ in self.get_params()
+        }
+
+        # TODO: this is a kludge, can just get this out of the dict directly
+        model_params["num_classes"] = (
+            len(self.keep_categories) + 1
+            if self.rest_as_other
+            else len(self.keep_categories)
+        )
+
+        data = np.load(self.input().path)
+
+        if "conv4_kernels" in model_params:
+            _, model = cnn_classifier_4conv(
+                data["train_imgs"],
+                data["train_labels"],  # using sparse categorical cross-entropy
+                data["valid_imgs"],
+                data["valid_labels"],
+                model_params,
+            )
+        elif "architecture" in model_params and model_params["architecture"] == "vgg16":
+
+            # TODO: build image dimension handling into the model object?
+
+            _, model = VGG16()(
+                np.repeat(data["train_imgs"], 3, axis=3),  # vgg16 expects RGB
+                data["train_labels"],  # using sparse categorical cross-entropy
+                np.repeat(data["valid_imgs"], 3, axis=3),
+                data["valid_labels"],
+                model_params,
+            )
+        elif "architecture" in model_params and model_params["architecture"] == "vgg19":
+
+            # TODO: build image dimension handling into the model object?
+
+            _, model = VGG19()(
+                np.repeat(data["train_imgs"], 3, axis=3),  # vgg19 expects RGB
+                data["train_labels"],  # using sparse categorical cross-entropy
+                np.repeat(data["valid_imgs"], 3, axis=3),
+                data["valid_labels"],
+                model_params,
+            )
+
+        elif (
+            "architecture" in model_params
+            and model_params["architecture"] == "resnet50"
+        ):
+            _, model = ResNet50()(
+                np.repeat(data["train_imgs"], 3, axis=3),  # resnet expects RGB
+                data["train_labels"],  # using sparse categorical cross-entropy
+                np.repeat(data["valid_imgs"], 3, axis=3),
+                data["valid_labels"],
+                model_params,
+            )
+
+        elif (
+            "architecture" in model_params
+            and model_params["architecture"] == "resnet50v2"
+        ):
+            _, model = ResNet50V2()(
+                np.repeat(data["train_imgs"], 3, axis=3),  # resnet expects RGB
+                data["train_labels"],  # using sparse categorical cross-entropy
+                np.repeat(data["valid_imgs"], 3, axis=3),
+                data["valid_labels"],
+                model_params,
+            )
+
+        elif (
+            "architecture" in model_params
+            and model_params["architecture"] == "resnet18"
+        ):
+            _, model = ResNet18()(
+                data["train_imgs"],
+                data["train_labels"],  # using sparse categorical cross-entropy
+                data["valid_imgs"],
+                data["valid_labels"],
+                model_params,
+            )
+
+        else:
+            _, model = cnn_classifier_2conv(
+                data["train_imgs"],
+                data["train_labels"],  # using sparse categorical cross-entropy
+                data["valid_imgs"],
+                data["valid_labels"],
+                model_params,
+            )
+        # save model for serialization
+        model.save(self.output().path)
+
+    def output(self):
+
+        """
+
+        Output location of trained Keras model in HDF5 format.
+
+        :return: luigi.LocalTarget
+        """
+
+        # filtering out parameters that are already encoded in file name
+        training_params = [
+            param
+            for param, obj in self.get_params()
+            if param
+            not in [
+                "hdffolder",
+                "imgfolder",
+                "modelsfolder",
+                "target_size",
+                "keep_categories",
+                "fractions",
+                "rest_as_other",
+                "whiten",
+                "epsilon",
+            ]
+        ]
+
+        training_param_vals = [
+            str(self.__getattribute__(param)) for param in training_params
+        ]
+
+        return luigi.LocalTarget(
+            "{}/{}_{}/trained.h5".format(
+                self.modelsfolder,
+                Path(self.input().path).stem,
+                "_".join(training_param_vals),
+            )
+        )
+
+
 class TrainModelFromDefinitionTask(luigi.Task, ABC):
     """
 

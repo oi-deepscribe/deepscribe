@@ -1,5 +1,6 @@
+import matplotlib.pyplot as plt
 import luigi
-from .training import TrainKerasModelFromDefinitionTask
+from .training import TrainKerasModelTask, TrainedModelTask
 from .selection import SelectDatasetTask
 from sklearn.metrics import confusion_matrix, classification_report
 import numpy as np
@@ -12,52 +13,31 @@ from pathlib import Path
 import json
 
 matplotlib.use("Agg")
-# import matplotlib.backends.backend_pdf
-import matplotlib.pyplot as plt
 
 
-class AnalysisTask(luigi.Task, ABC):
+class AnalysisTask(TrainedModelTask):
     """
     Abstract class that requires the completion of dataset selection and model training.
 
     """
 
-    imgfolder = luigi.Parameter()
-    hdffolder = luigi.Parameter()
-    modelsfolder = luigi.Parameter()
-    target_size = luigi.IntParameter()  # standardizing to square images
-    keep_categories = luigi.ListParameter()
-    fractions = luigi.ListParameter()  # train/valid/test fraction
-    model_definition = luigi.Parameter()  # JSON file with model definition specs
-    sigma = luigi.FloatParameter(default=0.5)
-    threshold = luigi.BoolParameter(default=False)
-    rest_as_other = luigi.BoolParameter(
-        default=False
-    )  # set the remaining as "other" - not recommended for small keep_category lengths
-    whiten = luigi.BoolParameter(default=False)
-    epsilon = luigi.FloatParameter(default=0.1)
+    outname = ""
 
     def requires(self):
         """
 
         Task depends on a trained model and a dataset archive.
 
+        We know that TrainKerasModel and this class both
+        inherit the same class, so we can assume the parameters are the same.
+
+        TODO; test if the ordering is consistent
+
         :return: Dictionary with TrainKerasModelFromDefinitionTask and SelectDatasetTask
         """
         return {
-            "model": TrainKerasModelFromDefinitionTask(
-                self.imgfolder,
-                self.hdffolder,
-                self.modelsfolder,
-                self.target_size,
-                self.keep_categories,
-                self.fractions,
-                self.model_definition,
-                self.sigma,
-                self.threshold,
-                self.rest_as_other,
-                self.whiten,
-                self.epsilon,
+            "model": TrainKerasModelTask(
+                *[self.__getattribute__(param) for param, _ in self.get_params()]
             ),
             "dataset": SelectDatasetTask(
                 self.imgfolder,
@@ -73,12 +53,22 @@ class AnalysisTask(luigi.Task, ABC):
             ),
         }
 
+    def output(self):
+
+        # assumes output is a single file
+
+        model_parent = Path(self.input()["model"].path).parents[0]
+
+        return luigi.LocalTarget(f"{model_parent}/{self.outname}")
+
 
 class PlotConfusionMatrixTask(AnalysisTask):
     """
     Produces a confusion matrix from the model on test data. 
 
     """
+
+    outname = "confusion_test.png"
 
     def run(self):
         """
@@ -122,23 +112,6 @@ class PlotConfusionMatrixTask(AnalysisTask):
         ax.set_yticklabels(list(class_labels))
         plt.savefig(self.output().path)
 
-    def output(self):
-        """
-
-        Location of the output image.
-
-        :return: luigi.LocalTarget
-        """
-
-        p = Path(self.model_definition)
-        p_data = Path(self.input()["dataset"].path)
-
-        return luigi.LocalTarget(
-            "{}/{}_{}/confustion_test.png".format(
-                self.modelsfolder, p.stem, p_data.stem
-            )
-        )
-
 
 class GenerateClassificationReportTask(AnalysisTask):
     """
@@ -146,6 +119,8 @@ class GenerateClassificationReportTask(AnalysisTask):
     Generates a classification report from the trained model on test data. 
 
     """
+
+    outname = "classification_report.txt"
 
     def run(self):
         """
@@ -167,8 +142,6 @@ class GenerateClassificationReportTask(AnalysisTask):
 
         # computing predicted labels
         pred_labels = np.argmax(pred_logits, axis=1)
-
-        # compute confusion matrix
 
         # print(data["test_labels"].shape)
         # print(pred_labels.shape)
@@ -224,23 +197,6 @@ class GenerateClassificationReportTask(AnalysisTask):
                 outf.write("TOP-K ACCURACIES ON TRAIN\n")
                 outf.write("\n".join(top_k_train))
 
-    def output(self):
-        """
-
-        Location of the output report.
-
-        :return: luigi.LocalTarget
-        """
-
-        p = Path(self.model_definition)
-        p_data = Path(self.input()["dataset"].path)
-
-        return luigi.LocalTarget(
-            "{}/{}_{}/classification_report.txt".format(
-                self.modelsfolder, p.stem, p_data.stem
-            )
-        )
-
 
 # plots a random sample of 16 incorrect images from test..
 class PlotIncorrectTask(AnalysisTask):
@@ -249,6 +205,8 @@ class PlotIncorrectTask(AnalysisTask):
     Loads 16 incorrectly classified images from test data and plots them in a grid.
 
     """
+
+    outname = "test_misclassified_sample.png"
 
     def run(self):
         """
@@ -266,7 +224,7 @@ class PlotIncorrectTask(AnalysisTask):
 
         pred_labels = np.argmax(pred_logits, axis=1)
 
-        incorrect_prediction_idx, = np.not_equal(
+        (incorrect_prediction_idx,) = np.not_equal(
             data["test_labels"], pred_labels
         ).nonzero()
 
@@ -287,93 +245,28 @@ class PlotIncorrectTask(AnalysisTask):
 
         plt.savefig(self.output().path)
 
-    def output(self):
-        """
-
-        Location of the output image.
-
-        :return: luigi.LocalTarget
-        """
-
-        p = Path(self.model_definition)
-        p_data = Path(self.input()["dataset"].path)
-
-        return luigi.LocalTarget(
-            "{}/{}_{}/test_misclassified_sample.png".format(
-                self.modelsfolder, p.stem, p_data.stem
-            )
-        )
-
 
 # runs the collection of analysis tasks on the
-class RunAnalysisOnTestDataTask(luigi.WrapperTask):
+class TrainAndAnalyze(luigi.WrapperTask, TrainedModelTask):
     """
     WrapperTask requiring the tasks GenerateClassificationReportTask, PlotConfusionMatrixTask, and PlotIncorrectTask.
 
     """
-
-    imgfolder = luigi.Parameter()
-    hdffolder = luigi.Parameter()
-    modelsfolder = luigi.Parameter()
-    target_size = luigi.IntParameter()  # standardizing to square images
-    keep_categories = luigi.ListParameter()
-    fractions = luigi.ListParameter()  # train/valid/test fraction
-    model_definition = luigi.Parameter()  # JSON file with model definition specs
-    sigma = luigi.FloatParameter(default=0.5)
-    threshold = luigi.BoolParameter(default=False)
-    rest_as_other = luigi.BoolParameter(
-        default=False
-    )  # set the remaining as "other" - not recommended for small keep_category lengths
-    whiten = luigi.BoolParameter(default=False)
-    epsilon = luigi.FloatParameter(default=0.1)
 
     def requires(self):
         """
         Requires the tasks GenerateClassificationReportTask, PlotConfusionMatrixTask, and PlotIncorrectTask.
 
         :return: List of luigi.Task subclasses
+        
         """
+
+        params = [self.__getattribute__(param) for param, _ in self.get_params()]
+
+        print(params)
+
         return [
-            GenerateClassificationReportTask(
-                self.imgfolder,
-                self.hdffolder,
-                self.modelsfolder,
-                self.target_size,
-                self.keep_categories,
-                self.fractions,
-                self.model_definition,
-                self.sigma,
-                self.threshold,
-                self.rest_as_other,
-                self.whiten,
-                self.epsilon,
-            ),
-            PlotConfusionMatrixTask(
-                self.imgfolder,
-                self.hdffolder,
-                self.modelsfolder,
-                self.target_size,
-                self.keep_categories,
-                self.fractions,
-                self.model_definition,
-                self.sigma,
-                self.threshold,
-                self.rest_as_other,
-                self.whiten,
-                self.epsilon,
-            ),
-            PlotIncorrectTask(
-                self.imgfolder,
-                self.hdffolder,
-                self.modelsfolder,
-                self.target_size,
-                self.keep_categories,
-                self.fractions,
-                self.model_definition,
-                self.sigma,
-                self.threshold,
-                self.rest_as_other,
-                self.whiten,
-                self.epsilon,
-            ),
+            GenerateClassificationReportTask(*params),
+            PlotConfusionMatrixTask(*params),
+            PlotIncorrectTask(*params),
         ]

@@ -12,8 +12,6 @@
 module load cuda/9.1
 
 SIGNS='["na","HAL","iš","MEŠ","ma","1","du","da","AN","AŠ"]'
-#SIGNS='["na","HAL"]'
-#SIGNS='["na","HAL","iš","MEŠ","ma","1","du","da","AN","AŠ"]'
 
 
 luigi --module deepscribe.pipeline.analysis RunAnalysisOnTestDataTask --local-scheduler \
@@ -23,5 +21,5 @@ luigi --module deepscribe.pipeline.analysis RunAnalysisOnTestDataTask --local-sc
       --target-size 50 \
       --keep-categories $SIGNS  \
       --fractions '[0.7, 0.1, 0.2]' \
-      --model-definition data/model_defs/alexnet-small.json \
-      --k 2
+      --epochs 2 \
+      --bsize 32
