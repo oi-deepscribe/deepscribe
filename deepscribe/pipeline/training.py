@@ -50,6 +50,13 @@ class TrainedModelTask(luigi.Task, ABC):
     early_stopping = luigi.IntParameter(default=0)
     reduce_lr = luigi.IntParameter(default=0)
     oversample = luigi.BoolParameter(default=False)
+    shear = luigi.FloatParameter(default=0.0)
+    zoom = luigi.FloatParameter(default=0.0)
+    width_shift = luigi.FloatParameter(default=0.0)
+    height_shift = luigi.FloatParameter(default=0.0)
+    regularize = luigi.FloatParameter(
+        default=0.0, description="penalty for regularization"
+    )
 
 
 class TrainKerasModelTask(TrainedModelTask):

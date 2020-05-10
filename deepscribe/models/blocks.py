@@ -13,6 +13,7 @@ def identity_block(
     filters: List[int],
     stage: int,
     block: str,
+    regularizer=None,
 ):
     """The identity block is the block that has no conv layer at shortcut.
     # Arguments
@@ -30,7 +31,11 @@ def identity_block(
     bn_name_base = "bn" + str(stage) + block + "_branch"
 
     x = layers.Conv2D(
-        filters1, (1, 1), kernel_initializer="he_normal", name=conv_name_base + "2a"
+        filters1,
+        (1, 1),
+        kernel_initializer="he_normal",
+        name=conv_name_base + "2a",
+        regularizer=regularizer,
     )(input_tensor)
     x = layers.BatchNormalization(name=bn_name_base + "2a")(x)
     x = layers.Activation("relu")(x)
@@ -41,6 +46,7 @@ def identity_block(
         padding="same",
         kernel_initializer="he_normal",
         name=conv_name_base + "2b",
+        regularizer=regularizer,
     )(x)
     x = layers.BatchNormalization(name=bn_name_base + "2b")(x)
     x = layers.Activation("relu")(x)
@@ -62,6 +68,7 @@ def conv_block(
     stage: int,
     block: str,
     strides: Tuple = (2, 2),
+    regularizer=None,
 ):
     """A block that has a conv layer at shortcut.
     # Arguments
@@ -89,6 +96,7 @@ def conv_block(
         strides=strides,
         kernel_initializer="he_normal",
         name=conv_name_base + "2a",
+        regularizer=regularizer,
     )(input_tensor)
     x = layers.BatchNormalization(name=bn_name_base + "2a")(x)
     x = layers.Activation("relu")(x)
@@ -99,6 +107,7 @@ def conv_block(
         padding="same",
         kernel_initializer="he_normal",
         name=conv_name_base + "2b",
+        regularizer=regularizer,
     )(x)
     x = layers.BatchNormalization(name=bn_name_base + "2b")(x)
     x = layers.Activation("relu")(x)
@@ -114,6 +123,7 @@ def conv_block(
         strides=strides,
         kernel_initializer="he_normal",
         name=conv_name_base + "1",
+        regularizer=regularizer,
     )(input_tensor)
     shortcut = layers.BatchNormalization(name=bn_name_base + "1")(shortcut)
 

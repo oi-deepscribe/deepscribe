@@ -71,8 +71,8 @@ class CNNAugment(ParameterModel, ABC):
 
         shear_range = params.get("shear", 0.0)
         zoom_range = params.get("zoom", 0.0)
-        width_shift = params.get("width-shift", 0.0)
-        height_shift = params.get("width-shift", 0.0)
+        width_shift = params.get("width_shift", 0.0)
+        height_shift = params.get("width_shift", 0.0)
         data_gen = kr.preprocessing.image.ImageDataGenerator(
             shear_range=shear_range,
             zoom_range=zoom_range,
@@ -334,6 +334,12 @@ class ResNet18(CNNAugment):
 
     def _build_model(self, params: Dict, img_shape: tuple = None) -> kr.Model:
 
+        # set up regularizer
+
+        reg_param = params.get("regularize", 0.0)  # default param - no penalty
+
+        regularizer = kr.regularizers.l1_l2(l1=reg_param, l2=reg_param)
+
         img_input = kr.layers.Input(shape=img_shape)
         x = layers.ZeroPadding2D(padding=(3, 3), name="conv1_pad")(img_input)
         x = layers.Conv2D(
@@ -343,6 +349,7 @@ class ResNet18(CNNAugment):
             padding="valid",
             kernel_initializer="he_normal",
             name="conv1",
+            regularizer=regularizer,
         )(x)
         x = layers.BatchNormalization(name="bn_conv1")(x)
         x = layers.Activation("relu")(x)
@@ -350,13 +357,31 @@ class ResNet18(CNNAugment):
         x = layers.MaxPooling2D((3, 3), strides=(2, 2))(x)
         # TODO: read these from params
         # default values from the original ResNet50 implementation.
-        x = conv_block(x, 3, [64, 64, 256], stage=2, block="a", strides=(1, 1))
-        x = identity_block(x, 3, [64, 64, 256], stage=2, block="b")
-        x = identity_block(x, 3, [64, 64, 256], stage=2, block="c")
+        x = conv_block(
+            x,
+            3,
+            [64, 64, 256],
+            stage=2,
+            block="a",
+            strides=(1, 1),
+            regularizer=regularizer,
+        )
+        x = identity_block(
+            x, 3, [64, 64, 256], stage=2, block="b", regularizer=regularizer
+        )
+        x = identity_block(
+            x, 3, [64, 64, 256], stage=2, block="c", regularizer=regularizer
+        )
 
-        x = conv_block(x, 3, [128, 128, 512], stage=3, block="a")
-        x = identity_block(x, 3, [128, 128, 512], stage=3, block="b")
-        x = identity_block(x, 3, [128, 128, 512], stage=3, block="c")
+        x = conv_block(
+            x, 3, [128, 128, 512], stage=3, block="a", regularizer=regularizer
+        )
+        x = identity_block(
+            x, 3, [128, 128, 512], stage=3, block="b", regularizer=regularizer
+        )
+        x = identity_block(
+            x, 3, [128, 128, 512], stage=3, block="c", regularizer=regularizer
+        )
 
         x = kr.layers.GlobalAveragePooling2D()(x)
 

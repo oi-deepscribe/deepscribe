@@ -263,8 +263,6 @@ class TrainAndAnalyze(luigi.WrapperTask, TrainedModelTask):
 
         params = [self.__getattribute__(param) for param, _ in self.get_params()]
 
-        print(params)
-
         return [
             GenerateClassificationReportTask(*params),
             PlotConfusionMatrixTask(*params),
