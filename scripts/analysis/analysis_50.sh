@@ -2,12 +2,12 @@
 
 #SBATCH --partition=gpu2 # GPU2 partition
 #SBATCH --ntasks=1
-#SBATCH --cpus-per-task=3 #requesting 3 CPUs
+#SBATCH --cpus-per-task=1 #requesting 1 CPU
 #SBATCH --gres=gpu:1     # Request 1 GPU
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user=eddiecwilliams@gmail.com
-#SBATCH --output=slogs/confusion-4-%j.out
-#SBATCH --error=slogs/confusion-4-%j.err
+#SBATCH --output=slogs/confusion-50-%j.out
+#SBATCH --error=slogs/confusion-50-%j.err
 #SBATCH --mem=16G
 
 module load cuda/9.1
@@ -23,5 +23,5 @@ luigi --module deepscribe.pipeline.analysis TrainAndAnalyze --local-scheduler \
       --keep-categories $SIGNS  \
       --fractions '[0.7, 0.1, 0.2]' \
       --epochs 128 \
-      --oversample \
-      --bsize 8
+      --regularize 0.05 \
+      --bsize 32

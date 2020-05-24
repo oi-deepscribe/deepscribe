@@ -94,8 +94,10 @@ class CNNAugment(ParameterModel, ABC):
                 tuple(y_train.shape[:1]) + tuple(x_train.shape[1:])
             )
 
-        history = model.fit_generator(
-            data_gen.flow(x_train, y=y_train),
+        # print(f"should be {x_train.shape[0] / params["bsize"]} steps per epoch, {x_train.shape[0]} data pts")
+
+        history = model.fit(
+            data_gen.flow(x_train, y=y_train, batch_size=params["bsize"]),
             steps_per_epoch=x_train.shape[0] / params["bsize"],
             epochs=params["epochs"],
             validation_data=(x_val, y_val),
@@ -349,7 +351,7 @@ class ResNet18(CNNAugment):
             padding="valid",
             kernel_initializer="he_normal",
             name="conv1",
-            regularizer=regularizer,
+            kernel_regularizer=regularizer,
         )(x)
         x = layers.BatchNormalization(name="bn_conv1")(x)
         x = layers.Activation("relu")(x)

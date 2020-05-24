@@ -35,7 +35,7 @@ def identity_block(
         (1, 1),
         kernel_initializer="he_normal",
         name=conv_name_base + "2a",
-        regularizer=regularizer,
+        kernel_regularizer=regularizer,
     )(input_tensor)
     x = layers.BatchNormalization(name=bn_name_base + "2a")(x)
     x = layers.Activation("relu")(x)
@@ -46,13 +46,17 @@ def identity_block(
         padding="same",
         kernel_initializer="he_normal",
         name=conv_name_base + "2b",
-        regularizer=regularizer,
+        kernel_regularizer=regularizer,
     )(x)
     x = layers.BatchNormalization(name=bn_name_base + "2b")(x)
     x = layers.Activation("relu")(x)
 
     x = layers.Conv2D(
-        filters3, (1, 1), kernel_initializer="he_normal", name=conv_name_base + "2c"
+        filters3,
+        (1, 1),
+        kernel_initializer="he_normal",
+        name=conv_name_base + "2c",
+        kernel_regularizer=regularizer,
     )(x)
     x = layers.BatchNormalization(name=bn_name_base + "2c")(x)
 
@@ -96,7 +100,7 @@ def conv_block(
         strides=strides,
         kernel_initializer="he_normal",
         name=conv_name_base + "2a",
-        regularizer=regularizer,
+        kernel_regularizer=regularizer,
     )(input_tensor)
     x = layers.BatchNormalization(name=bn_name_base + "2a")(x)
     x = layers.Activation("relu")(x)
@@ -107,13 +111,17 @@ def conv_block(
         padding="same",
         kernel_initializer="he_normal",
         name=conv_name_base + "2b",
-        regularizer=regularizer,
+        kernel_regularizer=regularizer,
     )(x)
     x = layers.BatchNormalization(name=bn_name_base + "2b")(x)
     x = layers.Activation("relu")(x)
 
     x = layers.Conv2D(
-        filters3, (1, 1), kernel_initializer="he_normal", name=conv_name_base + "2c"
+        filters3,
+        (1, 1),
+        kernel_initializer="he_normal",
+        name=conv_name_base + "2c",
+        kernel_regularizer=regularizer,
     )(x)
     x = layers.BatchNormalization(name=bn_name_base + "2c")(x)
 
@@ -123,7 +131,7 @@ def conv_block(
         strides=strides,
         kernel_initializer="he_normal",
         name=conv_name_base + "1",
-        regularizer=regularizer,
+        kernel_regularizer=regularizer,
     )(input_tensor)
     shortcut = layers.BatchNormalization(name=bn_name_base + "1")(shortcut)
 

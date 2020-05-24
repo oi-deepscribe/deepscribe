@@ -12,6 +12,14 @@ output/*
 # not committing
 *.npz
 
+.vscode/*
+
+wandb/
+
+slogs/*
+short_test/*
+varied_knums*
+models/*
 login.sh
 
 .idea
