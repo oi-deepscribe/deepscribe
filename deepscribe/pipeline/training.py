@@ -46,6 +46,7 @@ class TrainedModelTask(luigi.Task, ABC):
     threshold = luigi.BoolParameter(default=False)
     reweight = luigi.BoolParameter(default=False)
     optimizer = luigi.Parameter(default="adam")
+    lr = luigi.FloatParameter(default=0.001)  # learning rate
     activation = luigi.Parameter(default="relu")
     early_stopping = luigi.IntParameter(default=0)
     reduce_lr = luigi.IntParameter(default=0)
