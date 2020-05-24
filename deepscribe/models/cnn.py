@@ -399,3 +399,75 @@ class ResNet18(CNNAugment):
         model = kr.Model(inputs=img_input, outputs=predictions)
 
         return model
+
+
+class ParameterizedResNet(CNNAugment):
+    def _build_model(self, params: Dict, img_shape: tuple = None) -> kr.Model:
+
+        # set up regularizer
+
+        reg_param = params.get("regularize", 0.0)  # default param - no penalty
+
+        regularizer = kr.regularizers.l1_l2(l1=reg_param, l2=reg_param)
+
+        img_input = kr.layers.Input(shape=img_shape)
+        x = layers.ZeroPadding2D(padding=(3, 3), name="conv1_pad")(img_input)
+        x = layers.Conv2D(
+            64,
+            (7, 7),
+            strides=(2, 2),
+            padding="valid",
+            kernel_initializer="he_normal",
+            name="conv1",
+            kernel_regularizer=regularizer,
+        )(x)
+        x = layers.BatchNormalization(name="bn_conv1")(x)
+        x = layers.Activation("relu")(x)
+        x = layers.ZeroPadding2D(padding=(1, 1), name="pool1_pad")(x)
+        x = layers.MaxPooling2D((3, 3), strides=(2, 2))(x)
+        # TODO: read these from params
+        # default values from the original ResNet50 implementation.
+        # build resnet stages
+        # NOTE: the actual ResNets don't have constant numbers of blocks in each stage.
+
+        filter_vals = params.get("filters", [64, 64, 256])
+
+        for stage in range(1, params.get("stages", 1) + 1):
+
+            filter_vals_stage = [val * stage for val in filter_vals]
+
+            x = conv_block(
+                x,
+                3,
+                filter_vals_stage,
+                stage=stage,
+                block="a",
+                regularizer=regularizer,
+            )
+            x = identity_block(
+                x, 3, filter_vals_stage, stage=stage, block="b", regularizer=regularizer
+            )
+            x = identity_block(
+                x, 3, filter_vals_stage, stage=stage, block="c", regularizer=regularizer
+            )
+
+        x = kr.layers.GlobalAveragePooling2D()(x)
+
+        for _ in range(params.get("n_dense", 0)):
+            x = kr.layers.Dropout(params.get("dropout", 0.0))(x)
+            x = kr.layers.Dense(
+                params.get("dense_size", 512), activation=params["activation"]
+            )(x)
+
+        # get number of classes from params
+
+        num_classes = len(params["keep_categories"])
+
+        if params["rest_as_other"]:
+            num_classes += 1  # increment if there's an additional "OTHER" class
+
+        predictions = kr.layers.Dense(num_classes, activation="softmax")(x)
+
+        model = kr.Model(inputs=img_input, outputs=predictions)
+
+        return model

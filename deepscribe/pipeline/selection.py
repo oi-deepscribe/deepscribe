@@ -9,6 +9,7 @@ from sklearn.preprocessing import LabelEncoder
 from sklearn.model_selection import train_test_split
 import numpy as np
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
+from pathlib import Path
 
 
 class SelectDatasetTask(luigi.Task):
@@ -22,7 +23,7 @@ class SelectDatasetTask(luigi.Task):
     imgfolder = luigi.Parameter()
     hdffolder = luigi.Parameter()
     target_size = luigi.IntParameter()  # standardizing to square images
-    keep_categories = luigi.ListParameter()
+    keep_categories = luigi.Parameter()
     fractions = luigi.ListParameter()  # train/valid/test fraction
     sigma = luigi.FloatParameter(default=0.5)
     threshold = luigi.BoolParameter(default=False)
@@ -67,7 +68,12 @@ class SelectDatasetTask(luigi.Task):
         images_lst = []
         labels_lst = []
 
-        for label in tqdm(self.keep_categories, desc="Selecting Labels"):
+        # load keep categories from file
+
+        with open(self.keep_categories, "r") as infile:
+            categories = [line.strip() for line in infile.readlines()]
+
+        for label in tqdm(categories, desc="Selecting Labels"):
             all_label_imgs = [
                 np.array(data_archive[label][img]) for img in data_archive[label].keys()
             ]
@@ -79,9 +85,7 @@ class SelectDatasetTask(luigi.Task):
         # getting the rest. Slight code reuse but easier to debug.
         if self.rest_as_other:
             other_labels = [
-                label
-                for label in data_archive.keys()
-                if label not in self.keep_categories
+                label for label in data_archive.keys() if label not in categories
             ]
 
             for label in tqdm(other_labels, desc="Getting OTHER labels"):
@@ -151,9 +155,9 @@ class SelectDatasetTask(luigi.Task):
         return luigi.LocalTarget(
             "{}/{}_{}_{}_{}{}{}{}.npz".format(
                 self.hdffolder,
-                os.path.basename(self.imgfolder),
+                Path(self.imgfolder).stem,
                 self.target_size,
-                "_".join([str(cat) for cat in self.keep_categories]),
+                Path(self.keep_categories).stem,
                 self.sigma,
                 "_OTHER" if self.rest_as_other else "",
                 f"_whitened_{self.epsilon}" if self.whiten else "",

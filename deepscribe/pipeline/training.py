@@ -32,7 +32,7 @@ class TrainedModelTask(luigi.Task, ABC):
     hdffolder = luigi.Parameter()
     modelsfolder = luigi.Parameter()
     target_size = luigi.IntParameter()  # standardizing to square images
-    keep_categories = luigi.ListParameter()
+    keep_categories = luigi.Parameter()
     fractions = luigi.ListParameter()  # train/valid/test fraction
     rest_as_other = luigi.BoolParameter(
         default=False

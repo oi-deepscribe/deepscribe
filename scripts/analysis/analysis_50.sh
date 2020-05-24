@@ -12,15 +12,13 @@
 
 module load cuda/9.1
 
-SIGNS='["na","HAL","iš","MEŠ","ma","1","du","da","AN","AŠ","ka₄","kur","2","ba","ra","šá","be","20","3","SAL","ul","ITI","ia","KI","MIN","hu","man","QA","me","mi","ti","um","m°n","ha","10","taš","ak","ri","BAR","4","gal","pu","ku","ir","mar","ip","´","ki","an","5"]'
-
 
 luigi --module deepscribe.pipeline.analysis TrainAndAnalyze --local-scheduler \
       --imgfolder data/ochre/a_pfa \
       --hdffolder ../deepscribe-data/processed/pfa_new \
       --modelsfolder models \
       --target-size 50 \
-      --keep-categories $SIGNS  \
+      --keep-categories data/charsets/top50.txt \
       --fractions '[0.7, 0.1, 0.2]' \
       --epochs 128 \
       --regularize 0.05 \

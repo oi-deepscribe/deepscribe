@@ -12,17 +12,12 @@
 
 module load cuda/9.1
 
-SIGNS='["na","HAL","iš","MEŠ"]'
-#SIGNS='["na","HAL"]'
-#SIGNS='["na","HAL","iš","MEŠ","ma","1","du","da","AN","AŠ"]'
-
-
 luigi --module deepscribe.pipeline.analysis TrainAndAnalyze --local-scheduler \
       --imgfolder data/ochre/a_pfa \
       --hdffolder ../deepscribe-data/processed/pfa_new \
       --modelsfolder models \
       --target-size 50 \
-      --keep-categories $SIGNS  \
+      --keep-categories data/charsets/top4.txt  \
       --fractions '[0.7, 0.1, 0.2]' \
       --epochs 2 \
       --bsize 32
