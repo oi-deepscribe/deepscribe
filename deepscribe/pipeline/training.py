@@ -96,14 +96,9 @@ class TrainKerasModelTask(TrainedModelTask):
             name: self.__getattribute__(name) for name, _ in self.get_params()
         }
 
-        # TODO: this is a kludge, can just get this out of the dict directly
-        model_params["num_classes"] = (
-            len(self.keep_categories) + 1
-            if self.rest_as_other
-            else len(self.keep_categories)
-        )
-
         data = np.load(self.input().path)
+        # get correct number of classes for model building
+        model_params["num_classes"] = len(data["classes"])
 
         if "conv4_kernels" in model_params:
             _, model = cnn_classifier_4conv(
@@ -218,7 +213,7 @@ class TrainKerasModelTask(TrainedModelTask):
             "{}/{}_{}/trained.h5".format(
                 self.modelsfolder,
                 Path(self.input().path).stem,
-                "_".join(training_param_vals),
+                "_".join(training_param_vals).replace(".", "_"),
             )
         )
 

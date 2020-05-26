@@ -90,7 +90,7 @@ class ProcessImageTask(luigi.Task, ABC):
                 self.hdffolder,
                 os.path.basename(self.imgfolder),
                 self.identifier,
-                "_".join(additional_param_vals),
+                "_".join(additional_param_vals).replace(".", "_"),
             )
         )
 

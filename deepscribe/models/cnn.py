@@ -33,7 +33,7 @@ class CNNAugment(ParameterModel, ABC):
         if "seed" in params:
             tf.random.set_seed(params["seed"])
 
-        callbacks = []
+        callbacks = [kr.callbacks.TerminateOnNaN()]
 
         if params.get("early_stopping", 0) > 0:
             callbacks.append(
@@ -461,12 +461,7 @@ class ParameterizedResNet(CNNAugment):
 
         # get number of classes from params
 
-        num_classes = len(params["keep_categories"])
-
-        if params["rest_as_other"]:
-            num_classes += 1  # increment if there's an additional "OTHER" class
-
-        predictions = kr.layers.Dense(num_classes, activation="softmax")(x)
+        predictions = kr.layers.Dense(params["num_classes"], activation="softmax")(x)
 
         model = kr.Model(inputs=img_input, outputs=predictions)
 

@@ -137,4 +137,5 @@ def conv_block(
 
     x = layers.add([x, shortcut])
     x = layers.Activation("relu")(x)
+
     return x

@@ -153,14 +153,10 @@ class SelectDatasetTask(luigi.Task):
         """
 
         return luigi.LocalTarget(
-            "{}/{}_{}_{}_{}{}{}{}.npz".format(
+            "{}/{}_{}{}.npz".format(
                 self.hdffolder,
-                Path(self.imgfolder).stem,
-                self.target_size,
+                Path(self.input().path).stem,
                 Path(self.keep_categories).stem,
-                self.sigma,
                 "_OTHER" if self.rest_as_other else "",
-                f"_whitened_{self.epsilon}" if self.whiten else "",
-                "threshed" if self.threshold else "",
             )
         )
