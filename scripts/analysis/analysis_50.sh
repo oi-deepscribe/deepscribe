@@ -19,8 +19,10 @@ luigi --module deepscribe.pipeline.analysis TrainAndAnalyze --local-scheduler \
       --modelsfolder models \
       --target-size 50 \
       --keep-categories data/charsets/top50.txt \
-      --lr 0.005 \
+      --lr 0.001 \
       --fractions '[0.7, 0.1, 0.2]' \
-      --epochs 128 \
-      --regularize 0.05 \
+      --epochs 256 \
+      --shear 0.0 \
+      --zoom 0.0 \
+      --regularize 0.005 \
       --bsize 32
