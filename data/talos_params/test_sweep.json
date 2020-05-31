@@ -1,0 +1,33 @@
+{
+    "architecture": [
+        "resnet18"
+    ],
+    "lr": [
+        0.001
+    ],
+    "shear": [
+        0.0
+    ],
+    "width_shift": [
+        0.0
+    ],
+    "height_shift": [
+        0.0
+    ],
+    "l1": [
+        0.0
+    ],
+    "l2": [
+        0.0001
+    ],
+    "bsize": [
+        32,
+        64
+    ],
+    "epochs": [
+        2
+    ],
+    "reweight": [
+        false
+    ]
+}

@@ -10,10 +10,10 @@
 #SBATCH --error=slogs/confusion-50-%j.err
 #SBATCH --mem=16G
 
-module load cuda/9.1
+# module load cuda/9.1
 
 
-luigi --module deepscribe.pipeline.analysis TrainAndAnalyze --local-scheduler \
+PYTHONPATH="." luigi --module deepscribe.pipeline.analysis TrainAndAnalyze --local-scheduler \
       --imgfolder data/ochre/a_pfa \
       --hdffolder ../deepscribe-data/processed/pfa_new \
       --modelsfolder models \
@@ -21,8 +21,10 @@ luigi --module deepscribe.pipeline.analysis TrainAndAnalyze --local-scheduler \
       --keep-categories data/charsets/top50.txt \
       --lr 0.001 \
       --fractions '[0.7, 0.1, 0.2]' \
-      --epochs 256 \
-      --shear 0.0 \
+      --epochs 54 \
+      --shear 15.0 \
       --zoom 0.0 \
-      --regularize 0.005 \
+      --width-shift 0.2 \
+      --height-shift 0.2 \
+      --l2 0.0001 \
       --bsize 32

@@ -16,6 +16,7 @@ dependencies:
   - freetype
   - h5py==2.10
   - luigi
+  - imbalanced-learn
   - pip:
       - git+https://github.com/autonomio/talos@1.0
       - wandb

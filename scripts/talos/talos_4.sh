@@ -9,16 +9,13 @@
 #SBATCH --error=4-talos-%j.err
 #SBATCH --mem=16G
 
-module load cuda/9.1
 
-SIGNS='["na","HAL","iš","MEŠ"]'
-
-luigi --module deepscribe.pipeline.training RunTalosScanTask --local-scheduler \
+PYTHONPATH="." luigi --module deepscribe.pipeline.training RunTalosScanTask --local-scheduler \
       --imgfolder data/ochre/a_pfa \
       --hdffolder ../deepscribe-data/processed/pfa_new \
       --modelsfolder models \
       --target-size 50 \
-      --keep-categories $SIGNS  \
+      --keep-categories data/charsets/top4.txt \
       --fractions '[0.7, 0.1, 0.2]' \
-      --subsample 1 \
-      --model-definition data/talos_params/varied_knums_ksize.json
+      --subsample 1.0 \
+      --model-definition data/talos_params/test_sweep.json

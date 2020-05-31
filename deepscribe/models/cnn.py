@@ -12,6 +12,7 @@ from .parametermodel import ParameterModel
 from .blocks import conv_block, identity_block
 from imblearn.over_sampling import RandomOverSampler
 
+# DEPRECATED. I was trying out some callable inheritance stuff, but it turned out to be pretty overkill. 
 
 class CNNAugment(ParameterModel, ABC):
     """
@@ -53,7 +54,8 @@ class CNNAugment(ParameterModel, ABC):
 
         # logging params to wandb - not syncing, active syncing causes
         # slurm to not terminate the job
-        os.environ["WANDB_MODE"] = "dryrun"
+        # disabled now that we're not using slurm
+        # os.environ["WANDB_MODE"] = "dryrun"
 
         wandb.init(project="deepscribe", config=params)
 
@@ -72,12 +74,14 @@ class CNNAugment(ParameterModel, ABC):
         shear_range = params.get("shear", 0.0)
         zoom_range = params.get("zoom", 0.0)
         width_shift = params.get("width_shift", 0.0)
-        height_shift = params.get("width_shift", 0.0)
+        height_shift = params.get("width_shift", 0.0) 
+        rotation = params.get("rotation_range", 0.0)
         data_gen = kr.preprocessing.image.ImageDataGenerator(
             shear_range=shear_range,
             zoom_range=zoom_range,
             width_shift_range=width_shift,
             height_shift_range=height_shift,
+            rotation_range=rotation
         )
 
         # oversample training data

@@ -3,6 +3,8 @@ from typing import Dict, Tuple
 import numpy as np
 import tensorflow.keras as kr
 
+# DEPRECATED. I was trying out some callable inheritance stuff, but it turned out to be pretty overkill.
+
 
 class ParameterModel(ABC):
     """
