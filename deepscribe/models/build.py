@@ -12,11 +12,14 @@ from abc import ABC
 from .parametermodel import ParameterModel
 from .blocks import conv_block, identity_block
 from imblearn.over_sampling import RandomOverSampler
+from focal_loss import SparseCategoricalFocalLoss
 
 
 def model_from_params(params: Dict, img_shape: Tuple = None) -> kr.Model:
     if params["architecture"] == "resnet18":
         model = build_resnet18(params, img_shape=img_shape)
+    elif params["architecture"] == "cnn2conv":
+        model = build_cnn2conv(params, img_shape=img_shape)
     else:
         raise ValueError(
             f"architecture {params['architecture']} is not a valid option."
@@ -28,18 +31,98 @@ def model_from_params(params: Dict, img_shape: Tuple = None) -> kr.Model:
 
     if optimizer_type == "adam":
         optimizer = kr.optimizers.Adam(lr=params.get("lr", 0.001))
+    elif optimizer_type == "amsgrad":
+        optimizer = kr.optimizers.Adam(lr=params.get("lr", 0.001), amsgrad=True)
+    elif optimizer_type == "rmsprop":
+        optimizer = kr.optimizers.RMSprop(lr=params.get("lr", 0.001))
+    elif optimizer_type == "adamax":
+        optimizer = kr.optimizers.Adamax(lr=params.get("lr", 0.001))
+    elif optimizer_type == "sgd":
+        optimizer = kr.optimizers.SGD(
+            lr=params.get("lr", 0.001), momentum=params.get("momentum", 0.0)
+        )
     else:
         raise ValueError(f"optimizer {optimizer_type} is not a valid option.")
 
+    # using regular sparse categorical crossentropy
+    # even though these should be equivalent.
+
+    # also a good candidate for a walrus operator.
+
+    focal_gamma = params.get("focal", 0.0)
+
+    if focal_gamma > 0.0:
+        loss = SparseCategoricalFocalLoss(focal_gamma)
+    else:
+        loss = "sparse_categorical_crossentropy"
+
     model.compile(
         optimizer=optimizer,
-        loss="sparse_categorical_crossentropy",
+        loss=loss,
         metrics=[
             "acc",
             kr.metrics.SparseTopKCategoricalAccuracy(k=3, name="top3_acc"),
             kr.metrics.SparseTopKCategoricalAccuracy(k=5, name="top5_acc"),
         ],
     )
+
+    return model
+
+
+def build_resnet50(param: Dict, img_shape: tuple = None) -> kr.Model:
+
+    base_model = kr.applications.resnet_v2.ResNet50V2(
+        weights=None, include_top=False, input_shape=img_shape,
+    )
+
+    x = base_model.output
+    x = kr.layers.GlobalAveragePooling2D()(x)
+    predictions = kr.layers.Dense(params["num_classes"], activation="softmax")(x)
+
+    model = kr.Model(inputs=base_model.input, outputs=predictions)
+    return model
+
+
+def build_cnn2conv(params: Dict, img_shape: tuple = None) -> kr.Model:
+
+    model = kr.models.Sequential()
+    model.add(
+        kr.layers.Conv2D(
+            params["conv1_kernels"],
+            kernel_size=(params["conv1_ksize"], params["conv1_ksize"]),
+            strides=(params["conv1_stride"], params["conv1_stride"]),
+            activation=params["activation"],
+        )
+    )
+    model.add(
+        kr.layers.MaxPooling2D(
+            pool_size=(params["pool1_size"], params["pool1_size"]),
+            strides=(params["pool1_stride"], params["pool1_stride"]),
+        )
+    )
+    model.add(kr.layers.BatchNormalization())
+    model.add(kr.layers.Dropout(params["dropout"]))
+    model.add(
+        kr.layers.Conv2D(
+            params["conv2_kernels"],
+            kernel_size=(params["conv2_ksize"], params["conv2_ksize"]),
+            strides=(params["conv2_stride"], params["conv2_stride"]),
+            activation=params["activation"],
+        )
+    )
+    model.add(kr.layers.BatchNormalization())
+    model.add(
+        kr.layers.MaxPooling2D(
+            pool_size=(params["pool2_size"], params["pool2_size"]),
+            strides=(params["pool2_stride"], params["pool2_stride"]),
+        )
+    )
+
+    model.add(kr.layers.Dropout(params["dropout"]))
+    model.add(kr.layers.Flatten())
+    model.add(kr.layers.Dense(params["dense_size"], activation=params["activation"]))
+    # model.add(kr.layers.Dense(512, activation='relu'))
+    model.add(kr.layers.Dense(params["num_classes"], activation="softmax"))
 
     return model
 
@@ -63,6 +146,8 @@ def build_resnet18(params: Dict, img_shape: tuple = None) -> kr.Model:
         kernel_initializer="he_normal",
         name="conv1",
         kernel_regularizer=regularizer,
+        bias_regularizer=regularizer,
+        activity_regularizer=regularizer,
     )(x)
     x = layers.BatchNormalization(name="bn_conv1")(x)
     x = layers.Activation("relu")(x)

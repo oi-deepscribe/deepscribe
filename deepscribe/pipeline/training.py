@@ -59,6 +59,10 @@ class TrainedModelTask(luigi.Task, ABC):
     rotation_range = luigi.FloatParameter(default=0.0)
     l1 = luigi.FloatParameter(default=0.0, description="penalty for l1 regularization")
     l2 = luigi.FloatParameter(default=0.0, description="penalty for l2 regularization")
+    focal = luigi.FloatParameter(default=0.0, description="focal loss parameter")
+    momentum = luigi.FloatParameter(
+        default=0.0, description="momentum parameter for SGD."
+    )
 
 
 class TrainKerasModelTask(TrainedModelTask):

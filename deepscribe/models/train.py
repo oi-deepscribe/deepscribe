@@ -11,6 +11,9 @@ from abc import ABC
 from .build import model_from_params
 from imblearn.over_sampling import RandomOverSampler
 
+physical_devices = tf.config.list_physical_devices("GPU")
+tf.config.experimental.set_memory_growth(physical_devices[0], True)
+
 
 def build_train_params(
     x_train: np.ndarray,
@@ -44,7 +47,9 @@ def train_from_params(
     if params.get("early_stopping", 0) > 0:
         callbacks.append(
             kr.callbacks.EarlyStopping(
-                monitor="val_loss", patience=params["early_stopping"]
+                monitor="val_loss",
+                patience=params["early_stopping"],
+                restore_best_weights=True,
             )
         )
 
@@ -87,6 +92,8 @@ def train_from_params(
         width_shift_range=width_shift,
         height_shift_range=height_shift,
         rotation_range=rotation,
+        fill_mode="constant",
+        cval=0.0,
     )
 
     # oversample training data
@@ -106,8 +113,8 @@ def train_from_params(
     # print(f"should be {x_train.shape[0] / params["bsize"]} steps per epoch, {x_train.shape[0]} data pts")
 
     history = model.fit(
-        data_gen.flow(x_train, y=y_train, batch_size=params["bsize"]),
-        steps_per_epoch=x_train.shape[0] / params["bsize"],
+        data_gen.flow(x_train, y=y_train, batch_size=params.get("bsize", 32)),
+        steps_per_epoch=x_train.shape[0] / params.get("bsize", 32),
         epochs=params["epochs"],
         validation_data=(x_val, y_val),
         callbacks=callbacks,

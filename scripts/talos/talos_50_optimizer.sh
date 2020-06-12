@@ -18,7 +18,6 @@ PYTHONPATH="." luigi --module deepscribe.pipeline.training RunTalosScanTask --lo
       --keep-categories data/charsets/top50.txt \
       --fractions '[0.7, 0.1, 0.2]' \
       --subsample 1.0 \
-      --model-definition data/talos_params/augmentation_sweep.json
-
+      --model-definition data/talos_params/optimizer_sweep.json
 
 echo "Subject: Talos parameter scan complete. " | sendmail eddiecwilliams@gmail.com

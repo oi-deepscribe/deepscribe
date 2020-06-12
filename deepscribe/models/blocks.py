@@ -36,6 +36,8 @@ def identity_block(
         kernel_initializer="he_normal",
         name=conv_name_base + "2a",
         kernel_regularizer=regularizer,
+        bias_regularizer=regularizer,
+        activity_regularizer=regularizer,
     )(input_tensor)
     x = layers.BatchNormalization(name=bn_name_base + "2a")(x)
     x = layers.Activation("relu")(x)
@@ -47,6 +49,8 @@ def identity_block(
         kernel_initializer="he_normal",
         name=conv_name_base + "2b",
         kernel_regularizer=regularizer,
+        bias_regularizer=regularizer,
+        activity_regularizer=regularizer,
     )(x)
     x = layers.BatchNormalization(name=bn_name_base + "2b")(x)
     x = layers.Activation("relu")(x)
@@ -57,6 +61,8 @@ def identity_block(
         kernel_initializer="he_normal",
         name=conv_name_base + "2c",
         kernel_regularizer=regularizer,
+        bias_regularizer=regularizer,
+        activity_regularizer=regularizer,
     )(x)
     x = layers.BatchNormalization(name=bn_name_base + "2c")(x)
 
@@ -101,6 +107,8 @@ def conv_block(
         kernel_initializer="he_normal",
         name=conv_name_base + "2a",
         kernel_regularizer=regularizer,
+        bias_regularizer=regularizer,
+        activity_regularizer=regularizer,
     )(input_tensor)
     x = layers.BatchNormalization(name=bn_name_base + "2a")(x)
     x = layers.Activation("relu")(x)
@@ -112,6 +120,8 @@ def conv_block(
         kernel_initializer="he_normal",
         name=conv_name_base + "2b",
         kernel_regularizer=regularizer,
+        bias_regularizer=regularizer,
+        activity_regularizer=regularizer,
     )(x)
     x = layers.BatchNormalization(name=bn_name_base + "2b")(x)
     x = layers.Activation("relu")(x)
@@ -122,6 +132,8 @@ def conv_block(
         kernel_initializer="he_normal",
         name=conv_name_base + "2c",
         kernel_regularizer=regularizer,
+        bias_regularizer=regularizer,
+        activity_regularizer=regularizer,
     )(x)
     x = layers.BatchNormalization(name=bn_name_base + "2c")(x)
 
@@ -132,6 +144,8 @@ def conv_block(
         kernel_initializer="he_normal",
         name=conv_name_base + "1",
         kernel_regularizer=regularizer,
+        bias_regularizer=regularizer,
+        activity_regularizer=regularizer,
     )(input_tensor)
     shortcut = layers.BatchNormalization(name=bn_name_base + "1")(shortcut)
 

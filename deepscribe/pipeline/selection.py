@@ -120,7 +120,7 @@ class SelectDatasetTask(luigi.Task):
 
         # train/test split
         train_imgs, test_imgs, train_labels, test_labels = train_test_split(
-            images, categorical_labels, test_size=fracs[2]
+            images, categorical_labels, test_size=fracs[2], stratify=categorical_labels
         )
 
         # split again for validation
@@ -128,7 +128,7 @@ class SelectDatasetTask(luigi.Task):
         valid_split = fracs[1] / (fracs[0] + fracs[1])
 
         train_imgs, valid_imgs, train_labels, valid_labels = train_test_split(
-            train_imgs, train_labels, test_size=valid_split
+            train_imgs, train_labels, test_size=valid_split, stratify=train_labels
         )
 
         # repeat train and test labels
