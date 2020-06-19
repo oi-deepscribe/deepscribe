@@ -7,7 +7,7 @@ dependencies:
   - matplotlib
   - pillow
   - pip
-  - tensorflow-gpu=2.1
+  - tensorflow-gpu=2.2
   - tqdm
   - scikit-image
   - scikit-learn
@@ -20,3 +20,4 @@ dependencies:
   - pip:
       - git+https://github.com/autonomio/talos@1.0
       - wandb
+      - focal-loss

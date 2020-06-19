@@ -1,0 +1,31 @@
+{
+    "architecture": [
+        "resnet18"
+    ],
+    "shear": [
+        10.0,
+        20.0
+    ],
+    "width_shift": [
+        0.1,
+        0.2
+    ],
+    "height_shift": [
+        0.1,
+        0.2
+    ],
+    "rotation_range": [
+        10,
+        20
+    ],
+    "zoom": [
+        0.1,
+        0.2
+    ],
+    "epochs": [
+        64
+    ],
+    "early_stopping": [
+        10
+    ]
+}

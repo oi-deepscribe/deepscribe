@@ -51,10 +51,11 @@ def model_from_params(params: Dict, img_shape: Tuple = None) -> kr.Model:
 
     focal_gamma = params.get("focal", 0.0)
 
-    if focal_gamma > 0.0:
-        loss = SparseCategoricalFocalLoss(focal_gamma)
-    else:
-        loss = "sparse_categorical_crossentropy"
+    loss = (
+        SparseCategoricalFocalLoss(focal_gamma)
+        if focal_gamma > 0.0
+        else "sparse_categorical_crossentropy"
+    )
 
     model.compile(
         optimizer=optimizer,
@@ -69,7 +70,7 @@ def model_from_params(params: Dict, img_shape: Tuple = None) -> kr.Model:
     return model
 
 
-def build_resnet50(param: Dict, img_shape: tuple = None) -> kr.Model:
+def build_resnet50(params: Dict, img_shape: tuple = None) -> kr.Model:
 
     base_model = kr.applications.resnet_v2.ResNet50V2(
         weights=None, include_top=False, input_shape=img_shape,
