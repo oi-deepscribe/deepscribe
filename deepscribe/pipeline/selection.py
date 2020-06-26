@@ -4,7 +4,8 @@ import luigi
 import os
 from tqdm import tqdm
 import h5py
-from deepscribe.pipeline.images import StandardizeImageSizeTask
+from luigi.util import requires
+from .images import ProcessImagesTask
 from sklearn.preprocessing import LabelEncoder
 from sklearn.model_selection import train_test_split
 import numpy as np
@@ -12,6 +13,7 @@ from tensorflow.keras.preprocessing.image import ImageDataGenerator
 from pathlib import Path
 
 
+@requires(ProcessImagesTask)
 class SelectDatasetTask(luigi.Task):
     """
     Selecting classes from larger dataset to produce a smaller archive for training.
@@ -20,30 +22,15 @@ class SelectDatasetTask(luigi.Task):
     categories.
     """
 
-    imgfolder = luigi.Parameter()
-    hdffolder = luigi.Parameter()
-    target_size = luigi.IntParameter()  # standardizing to square images
-    keep_categories = luigi.Parameter()
+    keep_categories = luigi.Parameter()  # if none, keep all
     fractions = luigi.ListParameter()  # train/valid/test fraction
-    sigma = luigi.FloatParameter(default=0.5)
-    threshold = luigi.BoolParameter(default=False)
     rest_as_other = luigi.BoolParameter(
         default=False
     )  # set the remaining as "other" - not recommended for small keep_category lengths
     whiten = luigi.BoolParameter(
         default=False
     )  # perform ZCA whitening on whole dataset
-    epsilon = luigi.FloatParameter(default=0.1)
-
-    def requires(self):
-        """
-
-        :return: StandardizeImageSizeTask
-        """
-
-        return StandardizeImageSizeTask(
-            self.imgfolder, self.hdffolder, self.target_size, self.sigma, self.threshold
-        )
+    epsilon = luigi.FloatParameter(default=0.1)  # ZCA whitening epsilon
 
     def run(self):
         """
@@ -68,10 +55,13 @@ class SelectDatasetTask(luigi.Task):
         images_lst = []
         labels_lst = []
 
-        # load keep categories from file
+        # load keep categories from file if present
 
-        with open(self.keep_categories, "r") as infile:
-            categories = [line.strip() for line in infile.readlines()]
+        if self.keep_categories is not None:
+            with open(self.keep_categories, "r") as infile:
+                categories = [line.strip() for line in infile.readlines()]
+        else:
+            categories = list(np.unique(data_archive.keys()))
 
         for label in tqdm(categories, desc="Selecting Labels"):
             all_label_imgs = [
@@ -153,10 +143,12 @@ class SelectDatasetTask(luigi.Task):
         """
 
         return luigi.LocalTarget(
-            "{}/{}_{}{}.npz".format(
-                self.hdffolder,
-                Path(self.input().path).stem,
-                Path(self.keep_categories).stem,
+            "{}_{}{}{}.npz".format(
+                Path(self.input().path).resolve().with_suffix(""),
+                Path(self.keep_categories).stem if self.keep_categories else "all",
                 "_OTHER" if self.rest_as_other else "",
+                f"_whitened_{str(self.epsilon).replace('.', 'p')}"
+                if self.whiten
+                else "",
             )
         )

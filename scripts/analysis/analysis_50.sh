@@ -14,22 +14,21 @@
 
 
 PYTHONPATH="." luigi --module deepscribe.pipeline.analysis TrainAndAnalyze --local-scheduler \
-      --imgfolder data/ochre/a_pfa \
-      --hdffolder ../deepscribe-data/processed/pfa_new \
-      --modelsfolder models \
+      --imgarchive "/local/ecw/deepscribe-data/pfa/a_pfa_cleaned.h5" \
       --target-size 50 \
-      --keep-categories data/charsets/top50.txt \
+      --keep-categories /local/ecw/deepscribe/data/charsets/top50.txt \
+      --fractions '[0.7, 0.1, 0.2]' \
+      --histogram "adaptive" \
+      --sigma 0.5 \
+      --modelsfolder models_cleaned \
       --lr 0.01 \
       --optimizer adam \
-      --fractions '[0.7, 0.1, 0.2]' \
-      --epochs 64 \
+      --epochs 128 \
       --early-stopping 10 \
+      --reduce-lr 5 \
       --shear 20.0 \
       --zoom 0.2 \
       --width-shift 0.2 \
       --height-shift 0.2 \
       --rotation-range 20.0 \
-      --l2 0.0000 \
-      --l1 0.0000 \
-      --momentum 0.9 \
-      --bsize 32 \
+      --bsize 64 \

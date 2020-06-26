@@ -20,6 +20,8 @@ def model_from_params(params: Dict, img_shape: Tuple = None) -> kr.Model:
         model = build_resnet18(params, img_shape=img_shape)
     elif params["architecture"] == "cnn2conv":
         model = build_cnn2conv(params, img_shape=img_shape)
+    elif params["architecture"] == "resnet50":
+        model = build_resnet50(params, img_shape=img_shape)
     else:
         raise ValueError(
             f"architecture {params['architecture']} is not a valid option."
@@ -138,7 +140,8 @@ def build_resnet18(params: Dict, img_shape: tuple = None) -> kr.Model:
     regularizer = kr.regularizers.l1_l2(l1=reg_l1, l2=reg_l2)
 
     img_input = kr.layers.Input(shape=img_shape)
-    x = layers.ZeroPadding2D(padding=(3, 3), name="conv1_pad")(img_input)
+    input_dropout = kr.layers.Dropout(params.get("input_dropout", 0.0))(img_input)
+    x = layers.ZeroPadding2D(padding=(3, 3), name="conv1_pad")(input_dropout)
     x = layers.Conv2D(
         64,
         (7, 7),

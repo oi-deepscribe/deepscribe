@@ -6,6 +6,11 @@ from tqdm import tqdm
 import cv2
 import h5py
 import unicodedata
+import numpy as np
+from pathlib import Path
+import json
+
+# Disconnected from the rest of the workflow. Data cleaning is performed manually via Jupyter notebook.
 
 
 class OchreDatasetTask(luigi.ExternalTask):

@@ -11,15 +11,17 @@ output/*
 .DS_Store
 # not committing
 *.npz
+*.csv
 
 .vscode/*
+*.xml
 
 wandb/
 
 slogs/*
 short_test/*
 varied_knums*
-models/*
+models*
 login.sh
 
 .idea

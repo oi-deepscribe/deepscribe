@@ -3,6 +3,7 @@
 
 import luigi
 from deepscribe.pipeline.selection import SelectDatasetTask
+from luigi.util import requires
 from deepscribe.models.train import build_train_params
 from deepscribe.models.baselines import cnn_classifier_2conv, cnn_classifier_4conv
 from deepscribe.models.cnn import VGG16, VGG19, ResNet50, ResNet50V2, ResNet18
@@ -20,30 +21,19 @@ import matplotlib.pyplot as plt
 import talos
 
 
-class TrainedModelTask(luigi.Task, ABC):
+@requires(SelectDatasetTask)
+class TrainKerasModelTask(luigi.Task):
+    """
+    Parametrize the model entirely from Luigi parameters instead of using a separate params file.
+    Produces longer file names and longer task specification, but ultimately makes it easier to iterate on experiments. 
+
+    Parameters are used to build a dictionary that is passed to a model building class, for compatibility with Talos.
     """
 
-    Abstract class used to keep parameters consistent between task types!
-
-    Any class that produces or uses a trained model should inherit this.
-
-    """
-
-    imgfolder = luigi.Parameter()
-    hdffolder = luigi.Parameter()
     modelsfolder = luigi.Parameter()
-    target_size = luigi.IntParameter()  # standardizing to square images
-    keep_categories = luigi.Parameter()
-    fractions = luigi.ListParameter()  # train/valid/test fraction
-    rest_as_other = luigi.BoolParameter(
-        default=False
-    )  # set the remaining as "other" - not recommended for small keep_category lengths
-    whiten = luigi.BoolParameter(default=False)
-    epsilon = luigi.FloatParameter(default=0.1)
     epochs = luigi.IntParameter()
     bsize = luigi.IntParameter()
     architecture = luigi.Parameter(default="resnet18")  # architecture ID
-    sigma = luigi.FloatParameter(default=0.5)
     threshold = luigi.BoolParameter(default=False)
     reweight = luigi.BoolParameter(default=False)
     optimizer = luigi.Parameter(default="adam")
@@ -63,39 +53,14 @@ class TrainedModelTask(luigi.Task, ABC):
     momentum = luigi.FloatParameter(
         default=0.0, description="momentum parameter for SGD."
     )
-
-
-class TrainKerasModelTask(TrainedModelTask):
-    """
-    Parametrize the model entirely from Luigi parameters instead of using a separate params file.
-    Produces longer file names and longer task specification, but ultimately makes it easier to iterate on experiments. 
-
-    Parameters are used to build a dictionary that is passed to a model building class, for compatibility with Talos.
-    """
-
-    def requires(self):
-        """
-
-        :return: SelectDatasetTask
-        """
-        return SelectDatasetTask(
-            self.imgfolder,
-            self.hdffolder,
-            self.target_size,
-            self.keep_categories,
-            self.fractions,
-            self.sigma,
-            self.threshold,
-            self.rest_as_other,
-            self.whiten,
-            self.epsilon,
-        )
+    shadow_val_range = luigi.ListParameter(default=[0.0, 0.0])
+    num_shadows = luigi.IntParameter(default=0)
+    input_dropout = luigi.FloatParameter(default=0.0)
 
     def run(self):
 
         # create output directory
         self.output().makedirs()
-
         # assemble parameter dictionary from luigi args
         model_params = {
             name: self.__getattribute__(name) for name, _ in self.get_params()
@@ -124,17 +89,17 @@ class TrainKerasModelTask(TrainedModelTask):
 
         :return: luigi.LocalTarget
         """
-
+        # TODO: refactor this using requires decorator
         # filtering out parameters that are already encoded in file name
         training_params = [
             param
             for param, obj in self.get_params()
             if param
             not in [
-                "hdffolder",
-                "imgfolder",
-                "modelsfolder",
+                "imgarchive",
                 "target_size",
+                "histogram",
+                "sigma",
                 "keep_categories",
                 "fractions",
                 "rest_as_other",
@@ -151,11 +116,12 @@ class TrainKerasModelTask(TrainedModelTask):
             "{}/{}_{}/trained.h5".format(
                 self.modelsfolder,
                 Path(self.input().path).stem,
-                "_".join(training_param_vals).replace(".", "_"),
+                "_".join(training_param_vals).replace(".", "p"),
             )
         )
 
 
+@requires(SelectDatasetTask)
 class RunTalosScanTask(luigi.Task):
     """
 
@@ -163,39 +129,9 @@ class RunTalosScanTask(luigi.Task):
 
     """
 
-    imgfolder = luigi.Parameter()
-    hdffolder = luigi.Parameter()
-    modelsfolder = luigi.Parameter()
-    target_size = luigi.IntParameter()  # standardizing to square images
-    keep_categories = luigi.Parameter()
-    fractions = luigi.ListParameter()  # train/valid/test fraction
-    model_definition = luigi.Parameter()  # JSON file with model definition specs
-    sigma = luigi.FloatParameter(default=0.5)
-    threshold = luigi.BoolParameter(default=False)
-    rest_as_other = luigi.BoolParameter(
-        default=False
-    )  # set the remaining as "other" - not recommended for small keep_category lengths
-    whiten = luigi.BoolParameter(default=False)
-    epsilon = luigi.FloatParameter(default=0.1)
+    model_definition = luigi.Parameter()
+    modelfolder = luigi.Parameter()
     subsample = luigi.FloatParameter(default=0.001)
-
-    def requires(self):
-        """
-
-        :return: SelectDatasetTask
-        """
-        return SelectDatasetTask(
-            self.imgfolder,
-            self.hdffolder,
-            self.target_size,
-            self.keep_categories,
-            self.fractions,
-            self.sigma,
-            self.threshold,
-            self.rest_as_other,
-            self.whiten,
-            self.epsilon,
-        )
 
     def run(self):
 
@@ -226,8 +162,6 @@ class RunTalosScanTask(luigi.Task):
 
     def output(self):
         """
-
-        Pickled Talos Scan object.
 
         :return: luigi.LocalTarget
         """

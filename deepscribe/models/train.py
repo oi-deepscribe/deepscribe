@@ -3,12 +3,14 @@ from tensorflow.keras import layers
 import tensorflow as tf
 import numpy as np
 from typing import Dict, Tuple
+import cv2
 import wandb
 from wandb.keras import WandbCallback
 import os
 from sklearn.utils.class_weight import compute_class_weight
 from abc import ABC
 from .build import model_from_params
+from .augment import add_random_shadow
 from imblearn.over_sampling import RandomOverSampler
 
 physical_devices = tf.config.list_physical_devices("GPU")
@@ -86,6 +88,9 @@ def train_from_params(
     width_shift = params.get("width_shift", 0.0)
     height_shift = params.get("width_shift", 0.0)
     rotation = params.get("rotation_range", 0.0)
+    shadow_val_range = params.get("shadow_val_range", [0.0, 0.0])
+    num_shadows = params.get("num_shadows", 0.0)
+
     data_gen = kr.preprocessing.image.ImageDataGenerator(
         shear_range=shear_range,
         zoom_range=zoom_range,
@@ -93,6 +98,9 @@ def train_from_params(
         height_shift_range=height_shift,
         rotation_range=rotation,
         fill_mode="constant",
+        preprocessing_function=lambda img: add_random_shadow(
+            img, shadow_val_range, num_shadows=num_shadows
+        ),
         cval=0.0,
     )
 
