@@ -130,7 +130,7 @@ class RunTalosScanTask(luigi.Task):
     """
 
     model_definition = luigi.Parameter()
-    modelfolder = luigi.Parameter()
+    modelsfolder = luigi.Parameter()
     subsample = luigi.FloatParameter(default=0.001)
 
     def run(self):

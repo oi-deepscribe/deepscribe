@@ -162,7 +162,7 @@ class GenerateClassificationReportTask(luigi.Task):
 
         model_parent = Path(self.input()[0].path).parents[0]
 
-        return luigi.LocalTarget(f"{model_parent}/classification_report.png")
+        return luigi.LocalTarget(f"{model_parent}/classification_report.txt")
 
 
 # plots a random sample of 16 incorrect images from test.
@@ -196,11 +196,13 @@ class PlotIncorrectTest(luigi.Task):
             data["test_labels"], pred_labels
         ).nonzero()
 
+        incorrect = np.array(incorrect_prediction_idx)
+
         _, axarr = plt.subplots(5, 5, figsize=(10, 10))
 
         for i, (ix, iy) in enumerate(np.ndindex(axarr.shape)):
 
-            indx = incorrect_prediction_idx[i]
+            indx = incorrect[i]
             img = np.squeeze(data["test_imgs"][indx, :, :])
             ground_truth = data["classes"][data["test_labels"][indx]]
             pred_label = data["classes"][pred_labels[indx]]
@@ -256,11 +258,13 @@ class PlotIncorrectTrain(luigi.Task):
             data["train_labels"], pred_labels
         ).nonzero()
 
+        incorrect = np.array(incorrect_prediction_idx)
+
         _, axarr = plt.subplots(5, 5, figsize=(10, 10))
 
         for i, (ix, iy) in enumerate(np.ndindex(axarr.shape)):
 
-            indx = incorrect_prediction_idx[i]
+            indx = incorrect[i]
             img = np.squeeze(data["train_imgs"][indx, :, :])
             ground_truth = data["classes"][data["train_labels"][indx]]
             pred_label = data["classes"][pred_labels[indx]]

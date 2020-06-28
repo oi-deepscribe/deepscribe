@@ -25,6 +25,7 @@ class ProcessImagesTask(luigi.Task):
     target_size = luigi.IntParameter()  # standardizing to square images
     histogram = luigi.Parameter(default="")  # adaptive,
     sigma = luigi.FloatParameter(default=0.0)  # gaussian blur parameter
+    standardize = luigi.BoolParameter(default=False)
 
     def process_image(self, img):
         """
@@ -55,10 +56,10 @@ class ProcessImagesTask(luigi.Task):
             img = cv2.equalizeHist(img)
 
         # standardize
-        img = (img - np.mean(img)) / np.std(img)
+        if self.standardize:
+            img = (img - np.mean(img)) / np.std(img)
 
-        # filtering here before padding! otherwise, filter will be applied to the border as well.
-
+        # zero padding
         delta_w = int(self.target_size) - new_size[1]
         delta_h = int(self.target_size) - new_size[0]
 
@@ -111,10 +112,11 @@ class ProcessImagesTask(luigi.Task):
         pathroot = Path(self.imgarchive).with_suffix("")
 
         return luigi.LocalTarget(
-            "{}_processed_{}{}{}_{}.h5".format(
+            "{}_processed_{}{}_{}_{}_{}.h5".format(
                 pathroot,
                 "sigma",
                 str(self.sigma).replace(".", "p"),
+                "standardized" if self.standardize else "",
                 self.histogram,
                 self.target_size,
             )
