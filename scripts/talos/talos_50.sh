@@ -11,12 +11,13 @@
 
 
 PYTHONPATH="." luigi --module deepscribe.pipeline.training RunTalosScanTask --local-scheduler \
-      --imgfolder data/ochre/a_pfa \
-      --hdffolder ../deepscribe-data/processed/pfa_new \
-      --modelsfolder models \
+      --imgarchive "/local/ecw/deepscribe-data/pfa/a_pfa_cleaned.h5" \
       --target-size 50 \
-      --keep-categories data/charsets/top50.txt \
+      --keep-categories "/local/ecw/deepscribe/notebooks/top50.txt" \
       --fractions '[0.7, 0.1, 0.2]' \
+      --histogram "adaptive" \
+      --sigma 0.5 \
+      --modelsfolder models_cleaned \
       --subsample 1.0 \
       --model-definition data/talos_params/augmentation_sweep.json
 

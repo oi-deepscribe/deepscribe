@@ -31,6 +31,7 @@ class SelectDatasetTask(luigi.Task):
         default=False
     )  # perform ZCA whitening on whole dataset
     epsilon = luigi.FloatParameter(default=0.1)  # ZCA whitening epsilon
+    split_by_tablet = luigi.BoolParameter(default=False)
 
     def run(self):
         """
@@ -54,6 +55,7 @@ class SelectDatasetTask(luigi.Task):
 
         images_lst = []
         labels_lst = []
+        tablets_lst = []
 
         # load keep categories from file if present
 
@@ -64,13 +66,15 @@ class SelectDatasetTask(luigi.Task):
             categories = list(np.unique(data_archive.keys()))
 
         for label in tqdm(categories, desc="Selecting Labels"):
-            all_label_imgs = [
-                np.array(data_archive[label][img]) for img in data_archive[label].keys()
+            label_datasets = [
+                data_archive[label][img] for img in data_archive[label].keys()
             ]
 
-            images_lst.extend(all_label_imgs)
+            images_lst.extend([np.array(dset) for dset in label_datasets])
+            # image_uuid corresponds to each tablet image.
+            tablets_lst.extend([dset.attrs["image_uuid"] for dset in label_datasets])
 
-            labels_lst.extend([label for img in all_label_imgs])
+            labels_lst.extend([label for img in label_datasets])
 
         # getting the rest. Slight code reuse but easier to debug.
         if self.rest_as_other:
@@ -79,14 +83,16 @@ class SelectDatasetTask(luigi.Task):
             ]
 
             for label in tqdm(other_labels, desc="Getting OTHER labels"):
-                all_label_imgs = [
-                    np.array(data_archive[label][img])
-                    for img in data_archive[label].keys()
+                label_datasets = [
+                    data_archive[label][img] for img in data_archive[label].keys()
                 ]
 
-                images_lst.extend(all_label_imgs)
+                images_lst.extend([np.array(dset) for dset in label_datasets])
+                tablets_lst.extend(
+                    [dset.attrs["image_uuid"] for dset in label_datasets]
+                )
 
-                labels_lst.extend(["OTHER" for img in all_label_imgs])
+                labels_lst.extend(["OTHER" for img in label_datasets])
 
         data_archive.close()
         # create categorical labels
@@ -108,20 +114,60 @@ class SelectDatasetTask(luigi.Task):
 
         fracs = np.array(self.fractions)
 
-        # train/test split
-        train_imgs, test_imgs, train_labels, test_labels = train_test_split(
-            images, categorical_labels, test_size=fracs[2], stratify=categorical_labels
-        )
+        if self.split_by_tablet:
+            print("splitting by tablet")
 
-        # split again for validation
+            # split objects into train and test by their tablet UUID
 
-        valid_split = fracs[1] / (fracs[0] + fracs[1])
+            all_tablets = np.unique(tablets_lst)
 
-        train_imgs, valid_imgs, train_labels, valid_labels = train_test_split(
-            train_imgs, train_labels, test_size=valid_split, stratify=train_labels
-        )
+            train_tablets, test_tablets = train_test_split(
+                all_tablets, test_size=fracs[2]
+            )
 
-        # repeat train and test labels
+            # split again for validation
+
+            valid_split = fracs[1] / (fracs[0] + fracs[1])
+
+            train_tablets, valid_tablets = train_test_split(
+                train_tablets, test_size=valid_split
+            )
+
+            # select images and corresponding labels
+
+            train_mask = np.isin(tablets_lst, train_tablets)
+            test_mask = np.isin(tablets_lst, test_tablets)
+            valid_mask = np.isin(tablets_lst, valid_tablets)
+
+            train_imgs, train_labels = (
+                images[train_mask],
+                categorical_labels[train_mask],
+            )
+
+            test_imgs, test_labels = images[test_mask], categorical_labels[test_mask]
+
+            valid_imgs, valid_labels = (
+                images[valid_mask],
+                categorical_labels[valid_mask],
+            )
+
+        else:
+            print("splitting randomly")
+            # train/test split
+            train_imgs, test_imgs, train_labels, test_labels = train_test_split(
+                images,
+                categorical_labels,
+                test_size=fracs[2],
+                stratify=categorical_labels,
+            )
+
+            # split again for validation
+
+            valid_split = fracs[1] / (fracs[0] + fracs[1])
+
+            train_imgs, valid_imgs, train_labels, valid_labels = train_test_split(
+                train_imgs, train_labels, test_size=valid_split, stratify=train_labels
+            )
 
         np.savez_compressed(
             self.output().path,
@@ -143,12 +189,11 @@ class SelectDatasetTask(luigi.Task):
         """
 
         return luigi.LocalTarget(
-            "{}_{}{}{}.npz".format(
+            "{}_{}{}{}{}.npz".format(
                 Path(self.input().path).resolve().with_suffix(""),
                 Path(self.keep_categories).stem if self.keep_categories else "all",
                 "_OTHER" if self.rest_as_other else "",
-                f"_whitened_{str(self.epsilon).replace('.', 'p')}"
-                if self.whiten
-                else "",
+                f"whitened{str(self.epsilon).replace('.', 'p')}" if self.whiten else "",
+                "_tablet_split" if self.split_by_tablet else "",
             )
         )
